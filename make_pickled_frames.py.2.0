@@ -1,0 +1,95 @@
+import numpy, cPickle, fileinput, string, sys, heapq, os, shelve
+
+def Number_of_Frames(filename):
+    lines=[]
+    f=open(filename,'r')
+    hiframe=0
+    for line in f:
+        if line.startswith('f'):
+            continue
+        temp=string.split(line)
+        lines.append(temp)
+        if (float(temp[0])+(len(temp[1:])/3)-1)>hiframe:
+            hiframe=float(temp[0])+(len(temp[1:])/3)-1
+    heap=heapq.nlargest(1,lines,len)
+    if (len(heap[0])-1)/3>hiframe:
+        return (len(heap[0])-1)/3
+    else:
+        return int(hiframe)
+
+def appendsuperlist(intline,particle,pops):
+    coordcount=1
+    for coord in range(1,len(intline),3):
+        #print int(intline[0])+coordcount-2-pops,pops,coordcount,intline[0]
+        #print intline
+        #print intline[0]
+        superlist[int(intline[0])+coordcount-2-pops].append((particle,intline[coord],intline[coord+1]))
+        coordcount+=1
+
+filename=sys.argv[1]
+mkdir=str.split(filename,'/')
+try:
+    os.mkdir(mkdir[0]+'/Pickles')
+except OSError:
+    pass
+#open(mkdir[0]+"/Pickles/"+mkdir[1]+".frames",'w')
+#output=open(mkdir[0]+"/Pickles/"+mkdir[1]+".frames",'a')
+
+superlist=[]
+numofframes=Number_of_Frames(filename)
+print numofframes
+for i in range(1,numofframes+1):
+    superlist.append([i])
+#print superlist
+
+output=str(mkdir[0]+"/Pickles/"+mkdir[1]+".frames")
+#print output
+shelf=shelve.open(str(output))
+shelf['range']=[1,(len(superlist)+1)]
+
+particle=1
+pops=0
+frame=1
+f = open(filename,'r')
+framecount=1
+for line in f.readlines():
+    if line.startswith('f'):
+        continue
+    else:
+        templine=string.split(line)
+        intline=[float(i) for i in templine]
+        if framecount<intline[0]:
+            while framecount<intline[0]:
+                pops+=1
+                key=superlist[0][0]
+                shelf[str(key)]=superlist.pop(0)
+                #cPickle.dump(superlist.pop(0),output)
+                appendsuperlist(intline,particle,pops)
+                print "dumped frame "+str(framecount)
+                framecount+=1
+        else:
+            appendsuperlist(intline,particle,pops)
+        frame+=1
+        print "particle "+str(particle)+" is done!"
+        particle+=1
+
+
+#print superlist[0],superlist[1]
+#print len(superlist)
+#print pops
+for end in range(len(superlist)):
+    key=superlist[0][0]
+    shelf[str(key)]=superlist.pop(0)
+    #cPickle.dump(superlist.pop(0),output)
+    print "dumped frame "+str(framecount)
+    framecount+=1
+
+
+shelf.close()
+#f.close()
+
+#output=open("superpickle.pickle",'w')
+#cPickle.dump(superlist,output)
+        
+    
+    
