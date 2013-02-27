@@ -1,0 +1,43 @@
+import string
+
+particle=0
+trajdb={}
+for line in open('Mov_01221301_trajs_0.25FOV.txt','r').readlines():
+    if line.startswith('f'):
+        continue
+    else:
+        particle+=1
+        templine=string.split(line)
+        intline=[float(i) for i in templine]
+        spt=[(particle,intline[0],(len(intline)-1)/3)]
+        for k in range(1,len(intline),3):
+            spt.append((intline[k],intline[k+1]))
+        trajdb[str(particle)]=spt
+        print 'Particle '+str(particle)+' is done!'
+ trajdb['range']=[1,particle]
+innertrajs=[]
+for traj in range(1,trajdb['range'][1]):
+    singletraj=trajdb[str(traj)]
+    trajswitch=0
+    for pos in singletraj[1:]:
+        if pos[0]<5 or pos[1]<5 or pos[0]>475 or pos[1]>265:
+            print 'Particle '+str(singletraj[0][0])+' is too close to edge!'
+            trajswitch=1            
+            break
+        else:
+            continue
+    if trajswitch==1:
+        continue
+    else:
+        innertrajs.append(singletraj)
+        print 'Particle '+str(singletraj[0][0])+' is okay'
+out=open('Mov_01221301_inner_trajs.txt','w')
+out=open('Mov_01221301_inner_trajs.txt','a')
+for traj in innertrajs:
+    out.write(repr(traj[0][1]).rjust(6))    
+    for pos in traj[1:]:
+        line=repr(pos[1]).rjust(13),repr(pos[0]).rjust(13),repr(1.00).rjust(13)
+        out.write(line[0]+line[1]+line[2])
+    out.write('\n')
+    print 'Traj '+str(traj[0][0])+' is done'
+out.close()
