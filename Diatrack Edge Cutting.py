@@ -30,7 +30,7 @@ for traj in range(1,trajdb['range'][1]):
     singletraj=trajdb[str(traj)]
     trajswitch=0
     for pos in singletraj[1:]:
-        if pos[0]<pxcutoff or pos[1]<pxcutoff or pos[0]>(imgsize[0]-pxcutoff) or pos[1]>(imgsize[1]-pxcutoff):
+        if pos[0]<=pxcutoff or pos[1]<=pxcutoff or pos[0]>=(imgsize[0]-pxcutoff) or pos[1]>=(imgsize[1]-pxcutoff):
             print 'Particle '+str(singletraj[0][0])+'/'+str(particle)+' is too close to edge!'
             trajswitch=1            
             break
