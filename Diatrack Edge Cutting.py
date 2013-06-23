@@ -3,11 +3,11 @@ from decimal import *
 
 root = Tkinter.Tk()
 root.withdraw()
-file_path = tkFileDialog.askopenfilename()
+file_path = tkFileDialog.askopenfilename(filetypes=[('text files','.txt')])
 print "Opened "+file_path
 particle=0
 trajdb={}
-file_save=tkFileDialog.asksaveasfilename(initialfile=file_path)
+file_save=tkFileDialog.asksaveasfilename(initialfile=file_path,defaultextension=".txt")
 print "Will save as "+file_save
 pxcutoff=input('Pixel cutoff around edges=')
 imgsize=input('Pixel image size (x,y)')
