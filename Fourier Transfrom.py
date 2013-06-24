@@ -2,8 +2,13 @@ import string, scipy
 from decimal import *
 import numpy as np
 from matplotlib import pyplot as plt
+import os
+from os import listdir
 
 def read_diatrack_file(file_path):
+	'''Reads the Diatrack text File into a dictionary
+	
+	This should eventually be rewritten to import as numpy array, it would be much faster'''
     particle=0
     trajdb={}
     for line in open(file_path,'r').readlines():
@@ -51,7 +56,7 @@ def add_two_unequal_lists(lista,listb):
     return c
 	
 def avg_all_trajs_fft(traj_dict):
-    """Sums up the FFTs of all the trajectories in a trajectory dictionary"""
+    '''Sums up the FFTs of all the trajectories in a trajectory dictionary'''
     fft_sum=[]
     max_frame=0
     for particle in range(1,traj_dict['range'][1]):
@@ -81,7 +86,15 @@ def nextpow2(n):
     return m_i
 
 def openimgseq16(FileName):
-    iter_loc=discover_iterator(FileName)
+	'''Opens a series of individual tiff files as 16bit array. It starts at the Filename as the first entry'''
+    f_path,f_name=os.path.split(FileName)
+	f_base,f_ext=os.path.splitext(f_name)
+	start_index=listdir(f_path).index(f_name)
+	for file in listdir(f_path)[start_index:]
+		if f_ext==os.path.splitext(file)[1]:
+			im=Image.open(os.path.join(f_path,file))
+			
+			
     start_num_string=''    
     for index in iter_loc:
         start_num_string+=FileName[index]
@@ -90,7 +103,7 @@ def openimgseq16(FileName):
     return np.array(image.getdata(),np.uint16).reshape(image.size[1],image.size[0])
 
 def discover_iterator(FileName):
-    iter_loc=[]
+	iter_loc=[]
     for x in range(len(FileName)):
         digits=0
         if FileName[x] in string.digits:
