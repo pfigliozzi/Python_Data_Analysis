@@ -14,7 +14,7 @@ import numpy as np
 root = Tkinter.Tk()
 root.withdraw()
 f_path,f_name = os.path.split(tkFileDialog.askopenfilename())
-im= plt.imread(file_path)
+im= plt.imread(os.path.join(f_path,f_name))
 '''X = range(10, 200, 20)
 Y = range(10, 200, 20)
 Z = range(100)
