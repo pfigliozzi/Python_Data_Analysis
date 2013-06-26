@@ -23,17 +23,17 @@ def iden_img_sequence(FileName, p_rad, hwhm, d_rad, threshold, mask_rad):
 	start_index=listdir(f_path).index(f_name)
 	prams=[p_rad, hwhm, d_rad, threshold, mask_rad]
 	locs=[]
-	for file in listdir(f_path)[start_index:4]:
+	for file in listdir(f_path)[start_index:]:
 		if f_ext==os.path.splitext(file)[1]:
 			im=open_16bit_img(os.path.join(f_path,file))
 			locs.append(iden_image(im, *prams)[0])
 			print file
 		else:
+			print 'continue'
 			continue
 	return locs
 
 def track_data(points_list):
-	'''
 	data=[]
 	for frame in range(len(points_list)):
 		frame_data=[]
