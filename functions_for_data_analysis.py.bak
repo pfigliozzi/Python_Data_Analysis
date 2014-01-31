@@ -226,9 +226,9 @@ def nn_distance_angle_seperation(peaks,nn_dist, number_of_bins):
 	return radial_bins,bin_limits
 
 def create_hist_seperated_angles(deg_bins,bin_limits):
-	#hist_data=[np.concatenate(deg_1),np.concatenate(deg_2),np.concatenate(deg_3),np.concatenate(deg_4),np.concatenate(deg_5),np.concatenate(deg_6)]
-	labels=[str(v[1])+'-'+str(v[0]) for v in bin_limits]
-	plt.hist(deg_bins,bins=60,range=(0,60),normed=True,histtype='step',label=labels)
+	%hist_data=[np.concatenate(deg_1),np.concatenate(deg_2),np.concatenate(deg_3),np.concatenate(deg_4),np.concatenate(deg_5),np.concatenate(deg_6)]
+	labels=[]
+	plt.hist(hist_data,bins=60,range=(0,60),normed=True,histtype='step',label=labels)
 	plt.legend()
 	plt.xlabel('Degrees')
 	plt.ylabel('Probability Density')
