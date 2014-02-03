@@ -1,6 +1,7 @@
 import os
 import string
 import Tkinter,tkFileDialog
+import glob
 
 '''This script will clean up a folder that has both the andor raw '.sif' format
 and the exported '.tif' files. This is will created a folder based on the names
@@ -17,6 +18,8 @@ for files in os.listdir(directory):
 		new_directory=os.path.join(directory, os.path.splitext(files)[0])
 		try:
 			os.mkdir(new_directory)
+		except:
+			continue
 		finally:
 			filename=os.path.splitext(files)[0]
 			for file in glob.glob(os.path.join(directory,filename+'*.tif')):
