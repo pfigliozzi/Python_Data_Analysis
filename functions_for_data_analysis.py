@@ -1,11 +1,16 @@
 
 def import_matlab_gui():
+	'''This function will import data files that are generated from 
+	Rahgu's tracking GUI. Pick a matlab file and the output will be
+	an array'''
 	import scipy.io
 	import Tkinter, tkFileDialog
 	root = Tkinter.Tk()
 	root.withdraw()
 	file_path = tkFileDialog.askopenfilename(filetypes=[('matlab files','.mat')])
 	m=scipy.io.loadmat(str(file_path))['objs_link']
+	if len(m)==0:
+		m=scipy.io.loadmat(str(file_path))['objs']
 	return m
 
 def matlab_gui_to_data_frame(m):
@@ -114,7 +119,7 @@ def polar_transform(image, origin=None):
 	:pram origin: origin of the transform
 	:type origin: tuple.
 	'''
-	if origin==None:
+	if origin is None:
 		origin = (image.shape[0]//2,image.shape[1]//2)
 	maxr=np.sqrt((origin[0])**2+origin[1]**2)
 	thetabins=360

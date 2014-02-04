@@ -1,11 +1,16 @@
 
 def import_matlab_gui():
+	'''This function will import data files that are generated from 
+	Rahgu's tracking GUI. Pick a matlab file and the output will be
+	an array'''
 	import scipy.io
 	import Tkinter, tkFileDialog
 	root = Tkinter.Tk()
 	root.withdraw()
 	file_path = tkFileDialog.askopenfilename(filetypes=[('matlab files','.mat')])
 	m=scipy.io.loadmat(str(file_path))['objs_link']
+	if len(m)==0:
+		m=scipy.io.loadmat(str(file_path))['objs']
 	return m
 
 def matlab_gui_to_data_frame(m):
@@ -226,9 +231,9 @@ def nn_distance_angle_seperation(peaks,nn_dist, number_of_bins):
 	return radial_bins,bin_limits
 
 def create_hist_seperated_angles(deg_bins,bin_limits):
-	%hist_data=[np.concatenate(deg_1),np.concatenate(deg_2),np.concatenate(deg_3),np.concatenate(deg_4),np.concatenate(deg_5),np.concatenate(deg_6)]
-	labels=[]
-	plt.hist(hist_data,bins=60,range=(0,60),normed=True,histtype='step',label=labels)
+	#hist_data=[np.concatenate(deg_1),np.concatenate(deg_2),np.concatenate(deg_3),np.concatenate(deg_4),np.concatenate(deg_5),np.concatenate(deg_6)]
+	labels=[str(v[1])+'-'+str(v[0]) for v in bin_limits]
+	plt.hist(deg_bins,bins=60,range=(0,60),normed=True,histtype='step',label=labels)
 	plt.legend()
 	plt.xlabel('Degrees')
 	plt.ylabel('Probability Density')
