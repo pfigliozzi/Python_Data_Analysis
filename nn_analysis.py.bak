@@ -1,0 +1,41 @@
+def import_matlab_gui():
+	'''This function will import data files that are generated from 
+	Rahgu's tracking GUI. Pick a matlab file and the output will be
+	an array'''
+	import scipy.io
+	import Tkinter, tkFileDialog
+	root = Tkinter.Tk()
+	root.withdraw()
+	file_path = tkFileDialog.askopenfilename(filetypes=[('matlab files','.mat')])
+	m=scipy.io.loadmat(str(file_path))['objs_link']
+	if len(m)==0:
+		m=scipy.io.loadmat(str(file_path))['objs']
+	return m
+
+def matlab_gui_to_data_frame(m):
+	import pandas
+	return pandas.DataFrame({'x pos' : m[0][:], 'y pos' : m[1][:], 'frame' : m[4][:], 'particle id' : m[3][:], 'track id' : m[5][:]})
+
+def find_nn(grp):
+	'''Used to find the nearest neighbors in a data frame generated
+	from matlab_gui_to_data_frame. This adds both the nearest
+	neighbor track ids and the distances to each particle in each
+	frame. Use this by using df.groupby('frame').apply(find_nn)
+	where df is the data frame generated from matlab_gui_to_data_frame.
+	Set the output to what you want to call your new data frame (or write
+	over your old variable name).
+	
+	Note: This version of the function works when the input data frame
+	lacks track id information. That is, one does not know anything
+	about where particles go from frame to frame.'''
+	tree=scipy.spatial.KDTree(grp[['x pos','y pos']])
+	nn=tree.query(grp[['x pos','y pos']], k=12)
+	reindex_value=grp.index[0]
+	grp['nn_part']=[grp['particle id'][v].values for v in nn[1]+reindex_value]
+	grp['nn_dist']=[v for v in nn[0]]
+	return grp
+
+def plot_particle_positions(data_frame):
+	plt.scatter(data_frame['x pos'], data_frame['y pos'])
+	plt.axis('equal')
+	plt.show()
