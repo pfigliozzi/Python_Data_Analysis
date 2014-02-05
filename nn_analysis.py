@@ -84,7 +84,15 @@ def least_sq_fit_circle(data_frame):
 	xf,yf,rf=scipy.optimize.fmin(err_function,[center[0,0],center[0,1],radius])
 	return xf,yf,rf
 
-def refined_least_sq_fit_circle(data_frame, x_center, y_center, r_inner, r_outer):
+def refined_least_sq_fit_circle(data_frame, x_cent, y_cent, r_in, r_out):
+
+def filter_data_frame_by_radius(data_frame, x_cent, y_cent, r_in, r_out):
+	'''A simple function that will create a data frame that will
+	exclude a set of points not within two set radii'''
+	#outer_box = data_frame[['x pos','y pos']].applymap(lambda x: cdist([x_cent,y_cent],[x,x])>r_out)
+	outer_box = np.sqrt((data_frame['x pos']-x_cent)**2 + (data_frame['y pos']-y_cent)**2)<r_out
+	inner_box = np.sqrt((data_frame['x pos']-x_cent)**2 + (data_frame['y pos']-y_cent)**2)>r_in
+	return data_frame[outer_box & inner_box]
 	
 
 	
@@ -92,4 +100,6 @@ track_data=import_matlab_gui()
 track_data=matlab_gui_to_data_frame(m)
 img_height=input('Height of raw data (px)')
 y_axis_flip(track_data,img_height)
+xf,yf,rf=least_sq_fit_circle(track_data)
+
 
