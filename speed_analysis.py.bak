@@ -121,7 +121,11 @@ def plot_polar_transform(polar_transform_output):
 
 diatrack_list,file_path=import_diatrack_txt()
 plot_particle_positions(diatrack_list)
+#Ask if you want to cut out a radial part of the data
 looks_good=raw_input('Does this data need cutting? (y or n) ')
+#This while loop will allow you to iterate and refine the radial
+#cutting. The Least squares fitting could use some refinement
+#in order to better fit the circle
 while looks_good=='y':
 	xf,yf,rf=least_sq_fit_circle(diatrack_list)
 	transform=polar_transform_points(diatrack_list)
@@ -135,7 +139,9 @@ while looks_good=='y':
 		diatrack_list=tmp
 		break
 #disp_lag_time=input('What is displacement lag time? ')
+#Hard coded lag time values
 disp_lag_time=[1,3,5,10,20]
+#Calculate the displacements for each lag time
 for lag_time in disp_lag_time:
 	diatrack_list=calc_disp(diatrack_list,waiting_time=lag_time)
 frame_rate=input('What is the frame rate? (in fps): ')
@@ -149,9 +155,11 @@ else:
 um_conv=6.5/60/1.6/2 #Conversion factor between px and um
 disp_call_list=['disp '+str(v) for v in disp_lag_time]
 #disp_in_nm_and_sec=diatrack_list['disp '+str(lag_time)]*um_conv*frame_rate/disp_lag_time
-disp_mean=[diatrack_list['disp '+str(v)].mean()*um_conv*frame_rate/v for v in disp_lag_time]
+disp_mean=[np.sqrt(diatrack_list['disp '+str(v)].mean()*um_conv*frame_rate/v) for v in disp_lag_time]
 disp_call_list=[disp_call_list[v]+' mean='+str('{0:.2f}'.format(disp_mean[v])) for v in range(len(disp_mean))]
-plt.hist([diatrack_list['disp '+str(v)].dropna()*um_conv*frame_rate/v for v in disp_lag_time],normed=True,range=[0,100],bins=50,histtype='step',label=disp_call_list)
+
+#Plotting function for plotting several displacements for each movie
+plt.hist([np.sqrt(diatrack_list['disp '+str(v)].dropna()*um_conv*frame_rate/v) for v in disp_lag_time],normed=True,range=[0,100],bins=50,histtype='step',label=disp_call_list)
 plt.legend()
 plt.xlabel('Speed (um/s)')
 plt.ylabel('PDF')

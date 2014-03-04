@@ -155,14 +155,51 @@ else:
 um_conv=6.5/60/1.6/2 #Conversion factor between px and um
 disp_call_list=['disp '+str(v) for v in disp_lag_time]
 #disp_in_nm_and_sec=diatrack_list['disp '+str(lag_time)]*um_conv*frame_rate/disp_lag_time
-disp_mean=[diatrack_list['disp '+str(v)].mean()*um_conv*frame_rate/v for v in disp_lag_time]
+disp_mean=[np.sqrt(diatrack_list['disp '+str(v)].mean()*um_conv*frame_rate/v) for v in disp_lag_time]
 disp_call_list=[disp_call_list[v]+' mean='+str('{0:.2f}'.format(disp_mean[v])) for v in range(len(disp_mean))]
 
 #Plotting function for plotting several displacements for each movie
-plt.hist([diatrack_list['disp '+str(v)].dropna()*um_conv*frame_rate/v for v in disp_lag_time],normed=True,range=[0,100],bins=50,histtype='step',label=disp_call_list)
+plt.hist([np.sqrt(diatrack_list['disp '+str(v)].dropna()*um_conv*frame_rate/v) for v in disp_lag_time],normed=True,range=[0,100],bins=50,histtype='step',label=disp_call_list)
 plt.legend()
 plt.xlabel('Speed (um/s)')
 plt.ylabel('PDF')
 plt.title(str(os.path.split(file_path)[1])+' L='+str(l_value)+over_plate+'Lag Time '+str(disp_lag_time))
 plt.show()
 
+def eliminate_b_box_from_data_frame(data_frame):
+	'''This function allows you to eliminate points within a bounding box
+	from upper left to lower right between two points.'''
+	plot_particle_positions(data_frame)
+	#Ask if you want to cut out a radial part of the data
+	looks_good=raw_input('Does this data need cutting? (y or n) ')
+	#This while loop will allow you to iterate and refine the radial
+	#cutting. The Least squares fitting could use some refinement
+	#in order to better fit the circle
+	while looks_good=='y':
+		print "Add a bounding box to eliminate (x1,y1,x2,y2) from upper left to lower right: "
+		plot_particle_positions(data_frame)
+		b_box=input('Bounding Box to eliminate (x1,y1,x2,y2): ')
+		cut_out_x1=data_frame['x pos']<b_box[0]
+		cut_out_x2=data_frame['x pos']>b_box[2]
+		cut_out_y1=data_frame['y pos']>b_box[1]
+		cut_out_y2=data_frame['y pos']<b_box[3]
+		data_frame=data_frame[cut_out_x1 | cut_out_x2 | cut_out_y1 | cut_out_y2]
+		plot_particle_positions(data_frame)
+		looks_good=raw_input('Does this data need more cutting? (y or n) ')
+		if looks_good=='n':
+			break
+	return data_frame
+	
+'''def least_sq_fit_ellipse(data_frame):
+	from scipy.spatial.distance import cdist
+	import scipy.optimize
+	xy=data_frame[['x pos','y pos']].values
+	#Find center via center of mass
+	center = np.mean(xy, axis=0).reshape(1,2)
+	radius = cdist(center,xy).mean()
+	#Define the error function to minimize
+	def err_function((x_center, y_center,radius)):
+		err = [np.linalg.norm([x-x_center,y-y_center])-radius for x,y in xy]
+		return (np.array(err)**2).sum()
+	xf,yf,rf=scipy.optimize.fmin(err_function,[center[0,0],center[0,1],radius])
+	return xf,yf,rf
