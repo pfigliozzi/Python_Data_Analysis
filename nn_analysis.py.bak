@@ -43,6 +43,8 @@ def plot_particle_positions(data_frame):
 	tracking software'''
 	plt.scatter(data_frame['x pos'], data_frame['y pos'])
 	plt.axis('equal')
+	plt.xlabel('Pixels')
+	plt.ylabel('Pixels')
 	plt.show()
 	
 def polar_transform_points(data_frame, origin=None):
@@ -84,12 +86,94 @@ def least_sq_fit_circle(data_frame):
 	xf,yf,rf=scipy.optimize.fmin(err_function,[center[0,0],center[0,1],radius])
 	return xf,yf,rf
 
-def refined_least_sq_fit_circle(data_frame, x_center, y_center, r_inner, r_outer):
-	
+def filter_data_frame_by_radius(data_frame, x_cent, y_cent, r_in, r_out):
+	'''A simple function that will create a data frame that will
+	exclude a set of points not within two set radii'''
+	#outer_box = data_frame[['x pos','y pos']].applymap(lambda x: cdist([x_cent,y_cent],[x,x])>r_out)
+	outer_box = np.sqrt((data_frame['x pos']-x_cent)**2 + (data_frame['y pos']-y_cent)**2)<r_out
+	inner_box = np.sqrt((data_frame['x pos']-x_cent)**2 + (data_frame['y pos']-y_cent)**2)>r_in
+	return data_frame[outer_box & inner_box]
 
+#def angular_range_of_data_frame(data_frame, 
 	
+def nn_distance_angle_seperation(data_frame, number_of_bins, x_cent, y_cent):
+	'''Seperates the nearest neighbor distances into angular bins based
+	on the peak location
+	
+	:pram peaks: List of peaks from func find_peak_locations
+	:pram nn_dist: List of nearest neighbors from func find_nn_peaks
+	:pram number_of_bins: int.
+	'''
+	if 360%number_of_bins!=0:
+		print "Error: Number of bins must be divide 360 without remainders"
+		return None
+	if number_of_bins/2%2!=0:
+		print "Error: Half the number of bins must be even"
+		return None
+	bin_size=360/number_of_bins
+	bin_limits=[]
+	for i in range(number_of_bins):
+		if i==0:
+			bin_limits.append([0+bin_size/2,360-bin_size/2])
+		else:
+			bin_limits.append([(i*bin_size)+bin_size/2,(i*bin_size)-bin_size/2])
+	radial_bins=[]
+	for step in range(len(bin_limits)):
+		#Define the less than and greater than criterea
+		less_than=(180+180*np.arctan2(data_frame['x pos']-x_cent,data_frame['y pos']-y_cent)/np.pi)<=bin_limits[step][0]
+		greater_than=(180+180*np.arctan2(data_frame['x pos']-x_cent,data_frame['y pos']-y_cent)/np.pi)<=bin_limits[step][1]
+		if step==0:
+			radial_bins.append(np.concatenate([[v[1]] for v in data_frame[less_than | greater_than]['nn_dist'].values]))
+			#radial_bins.append(np.concatenate([nn_dist[v][np.logical_or(peaks[v]<=bin_limits[step][0],peaks[v]>=bin_limits[step][1])] for v in range(len(peaks))]))
+		else:
+			radial_bins.append(np.concatenate([[v[1]] for v in data_frame[less_than & greater_than]['nn_dist'].values]))
+			#radial_bins.append(np.concatenate([nn_dist[v][np.logical_and(peaks[v]<=bin_limits[step][0],peaks[v]>=bin_limits[step][1])] for v in range(len(peaks))]))
+	return radial_bins,bin_limits
+
+def plot_polar_transform(polar_transform_output):
+	'''This function plots the polar transform from the output from
+	polar_transform_points'''
+	plt.scatter(polar_transform_output[:,0],polar_transform_output[:,1])
+	plt.xlabel('Radius (px)')
+	plt.ylabel('Degrees')
+	#plt.axis('equal')
+	plt.show()
+
+'''This is the begining of the script portion of the analysis.
+This essential runs all the functions above in the right order to 
+perform the analysis properly.'''
 track_data=import_matlab_gui()
-track_data=matlab_gui_to_data_frame(m)
+track_data=matlab_gui_to_data_frame(track_data)
 img_height=input('Height of raw data (px)')
 y_axis_flip(track_data,img_height)
+xf,yf,rf=least_sq_fit_circle(track_data)
+polar_transform=polar_transform_points(track_data, origin=[xf,yf])
+plot_polar_transform(polar_transform)
+radial_bins=input('Decide 4 radial boundaries (1,2,3,4)')
 
+'''This section seperates the data into radial bins'''
+figure_data=[]
+for bound in range(len(radial_bins)-1):
+	rad_sep_df=filter_data_frame_by_radius(track_data, xf, yf, radial_bins[bound], radial_bins[bound+1])
+	ang_sep,ang_limits=nn_distance_angle_seperation(rad_sep_df,4,xf,yf)
+	figure_data.append([[radial_bins[bound],radial_bins[bound+1]],ang_sep,ang_limits])
+
+nm_conv=6.5/60/1.6/2 #Conversion factor between px and nm
+fig_data_lab_units=[]
+for rad_bin in range(len(figure_data)): #this loop seperates the data into angular bins
+	fig_data_lab_units.append(np.copy(figure_data[rad_bin]))
+	fig_data_lab_units[rad_bin][1]=[v*nm_conv for v in fig_data_lab_units[rad_bin][1]]
+
+'''This section allows you to plot the three radial bins nn histograms
+next to eachother'''
+fg1,axarr=plt.subplots(1,3,sharex=True, sharey=True)
+for figure in range(len(fig_data_lab_units)):
+	labels=[str(v[1])+'-'+str(v[0]) for v in fig_data_lab_units[figure][2]]
+	axarr[figure].hist(fig_data_lab_units[figure][1],normed=True,histtype='step',label=labels,range=(0,2),bins=60)
+	axarr[figure].set_title('Radius bounds'+str(fig_data_lab_units[figure][0][0])+'-'+str(fig_data_lab_units[figure][0][1]))
+plt.xlabel('1st NN Sep (um)')
+plt.ylabel('Prob Density')
+#fg1.subplots_adjust(vspace=0)
+axarr[2].legend()
+
+	
