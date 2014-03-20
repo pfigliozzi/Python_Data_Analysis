@@ -23,7 +23,7 @@ def import_diatrack_txt():
 			templine=[float(i) for i in templine]
 			frame=int(templine[0])
 			for pos in range(1,len(templine)-1,3):
-				imported_data.append([frame,track_id,templine[pos+1],templine[pos]])
+				imported_data.append([frame,track_id,templine[pos],templine[pos+1]])
 				frame+=1
 	imported_data=pd.DataFrame(imported_data,columns=['frame','track id','x pos','y pos'])
 	imported_data= imported_data.sort(['frame','track id'])
@@ -202,4 +202,4 @@ def eliminate_b_box_from_data_frame(data_frame):
 		err = [np.linalg.norm([x-x_center,y-y_center])-radius for x,y in xy]
 		return (np.array(err)**2).sum()
 	xf,yf,rf=scipy.optimize.fmin(err_function,[center[0,0],center[0,1],radius])
-	return xf,yf,rf
+	return xf,yf,rf'''
