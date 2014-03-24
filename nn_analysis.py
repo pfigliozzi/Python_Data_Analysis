@@ -177,5 +177,22 @@ plt.ylabel('Prob Density')
 #fg1.subplots_adjust(vspace=0)
 axarr[2].legend()
 
-np.array(np.concatenate(ang_sep[1],ang_sep[3]),np.concatenate(ang_sep[2],ang_sep[4]))
+'''This small section of the code allows you to combine the output of 
+nn_distance_angle_seperation() from 4 sections to 2 where the two 
+parts are the parallel and perpendicular parts of the ring. The
+last two lines convert the units from pixels to um'''
+ang_sep=np.array((np.concatenate((ang_sep[0],ang_sep[2])),np.concatenate((ang_sep[1],ang_sep[3]))))
+um_conv=6.5/60/1.6/2
+ang_sep_conv=ang_sep*um_conv
 
+def norm(x,mean,std,a):
+	return a*(1/(std*np.sqrt(2*np.pi)))*np.exp(-((x-mean)**2)/(2*std**2))
+
+def plot_par_and_perp_nn(ang_sep,plot_title):
+	labels=['Parellel (top/bottom)','Perpendicular (left/right)']
+	n,b,p=plt.hist([v for v in ang_sep],bins=100,range=(0,3),normed=True,histtype='step',label=labels)
+	plt.legend()
+	plt.title(plot_title)
+	plt.xlabel('Seperation (um)')
+	plt.ylabel('Probability Density')
+	plt.show()

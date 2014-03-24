@@ -98,7 +98,8 @@ def filter_data_frame_by_radius(data_frame, x_cent, y_cent, r_in, r_out):
 	
 def nn_distance_angle_seperation(data_frame, number_of_bins, x_cent, y_cent):
 	'''Seperates the nearest neighbor distances into angular bins based
-	on the peak location
+	on the peak location. This function only works if you are picking peaks
+	from the images and not using tracked data.
 	
 	:pram peaks: List of peaks from func find_peak_locations
 	:pram nn_dist: List of nearest neighbors from func find_nn_peaks
@@ -121,7 +122,7 @@ def nn_distance_angle_seperation(data_frame, number_of_bins, x_cent, y_cent):
 	for step in range(len(bin_limits)):
 		#Define the less than and greater than criterea
 		less_than=(180+180*np.arctan2(data_frame['x pos']-x_cent,data_frame['y pos']-y_cent)/np.pi)<=bin_limits[step][0]
-		greater_than=(180+180*np.arctan2(data_frame['x pos']-x_cent,data_frame['y pos']-y_cent)/np.pi)<=bin_limits[step][1]
+		greater_than=(180+180*np.arctan2(data_frame['x pos']-x_cent,data_frame['y pos']-y_cent)/np.pi)>=bin_limits[step][1]
 		if step==0:
 			radial_bins.append(np.concatenate([[v[1]] for v in data_frame[less_than | greater_than]['nn_dist'].values]))
 			#radial_bins.append(np.concatenate([nn_dist[v][np.logical_or(peaks[v]<=bin_limits[step][0],peaks[v]>=bin_limits[step][1])] for v in range(len(peaks))]))
@@ -176,4 +177,5 @@ plt.ylabel('Prob Density')
 #fg1.subplots_adjust(vspace=0)
 axarr[2].legend()
 
-	
+np.array(np.concatenate(ang_sep[1],ang_sep[3]),np.concatenate(ang_sep[2],ang_sep[4]))
+
