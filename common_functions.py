@@ -148,14 +148,15 @@ def plot_polar_transform(polar_transform_output):
 	#plt.axis('equal')
 	plt.show()
 	
-def import_diatrack_txt():
+def import_diatrack_txt(file_path=None):
 	'''This function imports the data from a Diatrack text
 	file into a pandas dataframe'''
-	root = Tkinter.Tk()
-	root.withdraw()
+	if file_path==None:
+		root = Tkinter.Tk()
+		root.withdraw()
+		file_path=tkFileDialog.askopenfilename(filetypes=[('diatrack files','.txt')])
 	track_id=0
 	imported_data=[]
-	file_path=tkFileDialog.askopenfilename(filetypes=[('diatrack files','.txt')])
 	for line in open(file_path,'r').readlines():
 		if line.startswith('f'):
 			continue
