@@ -1,3 +1,13 @@
+import string
+import scipy
+import Tkinter, tkFileDialog
+import numpy as np
+import pandas as pd
+from scipy.spatial.distance import cdist
+import matplotlib.pyplot as plt
+import os
+import sys
+
 def import_matlab_gui():
 	'''This function will import data files that are generated from 
 	Rahgu's tracking GUI. Pick a matlab file and the output will be
@@ -32,7 +42,7 @@ def find_nn(grp):
 	tree=scipy.spatial.KDTree(grp[['x pos','y pos']])
 	nn=tree.query(grp[['x pos','y pos']], k=12)
 	reindex_value=grp.index[0]
-	grp['nn_part']=[grp['particle id'][v].values for v in nn[1]+reindex_value]
+	grp['nn_part']=[grp['track id'][v].values for v in nn[1]+reindex_value]
 	grp['nn_dist']=[v for v in nn[0]]
 	return grp
 
@@ -162,3 +172,16 @@ def import_diatrack_txt():
 	imported_data.index = range(len(imported_data))
 	print file_path
 	return  imported_data,file_path
+	
+def find_longest_traj(data_frame):
+	'''In a data frame created from import_matlab_gui() or 
+	import_diatrack_txt and will return a data frame that contains only
+	the longest trajectory 'track id' values'''
+	grouped=data_frame.groupby('track id')
+	max_len,max_name=[0,0]
+	for name,grp in grouped:
+		if len(grp)>max_len:
+			max_name=name
+		else:
+			continue
+	return data_frame[data_frame['track id']==max_name]
