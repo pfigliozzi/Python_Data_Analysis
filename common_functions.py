@@ -8,15 +8,16 @@ import matplotlib.pyplot as plt
 import os
 import sys
 
-def import_matlab_gui():
+def import_matlab_gui(file_path=None):
 	'''This function will import data files that are generated from 
 	Rahgu's tracking GUI. Pick a matlab file and the output will be
 	an array'''
 	import scipy.io
-	import Tkinter, tkFileDialog
-	root = Tkinter.Tk()
-	root.withdraw()
-	file_path = tkFileDialog.askopenfilename(filetypes=[('matlab files','.mat')])
+	if file_path==None:
+		import Tkinter, tkFileDialog
+		root = Tkinter.Tk()
+		root.withdraw()
+		file_path = tkFileDialog.askopenfilename(filetypes=[('matlab files','.mat')])
 	print 'Loading '+file_path
 	m=scipy.io.loadmat(str(file_path))['objs_link']
 	if len(m)==0:
@@ -104,6 +105,14 @@ def filter_data_frame_by_radius(data_frame, x_cent, y_cent, r_in, r_out):
 	inner_box = np.sqrt((data_frame['x pos']-x_cent)**2 + (data_frame['y pos']-y_cent)**2)>r_in
 	return data_frame[outer_box & inner_box]
 
+def calc_angle(x_pos,y_pos,x_cent,y_cent):
+	'''This function calculates the angle of the positions with respect 
+	to the centers x_cent and y_cent. This function is designed so that
+	the origin is at the 12 o'clock position and increases going counter-
+	clockwise
+	'''
+    return 180+180*np.arctan2(x_pos-x_cent,y_cent-y_pos)/np.pi
+	
 def nn_distance_angle_seperation(data_frame, number_of_bins, x_cent, y_cent):
 	'''Seperates the nearest neighbor distances into angular bins based
 	on the peak location. This function only works if you are picking peaks
@@ -129,8 +138,8 @@ def nn_distance_angle_seperation(data_frame, number_of_bins, x_cent, y_cent):
 	radial_bins=[]
 	for step in range(len(bin_limits)):
 		#Define the less than and greater than criterea
-		less_than=(180+180*np.arctan2(data_frame['x pos']-x_cent,data_frame['y pos']-y_cent)/np.pi)<=bin_limits[step][0]
-		greater_than=(180+180*np.arctan2(data_frame['x pos']-x_cent,data_frame['y pos']-y_cent)/np.pi)>=bin_limits[step][1]
+		less_than=calc_angle(data_frame['x pos'],data_frame['y pos'],x_cent,y_cent)<=bin_limits[step][0]
+		greater_than=calc_angle(data_frame['x pos'],data_frame['y pos'],x_cent,y_cent)>=bin_limits[step][1]
 		if step==0:
 			radial_bins.append(np.concatenate([[v[1]] for v in data_frame[less_than | greater_than]['nn_dist'].values]))
 			#radial_bins.append(np.concatenate([nn_dist[v][np.logical_or(peaks[v]<=bin_limits[step][0],peaks[v]>=bin_limits[step][1])] for v in range(len(peaks))]))
