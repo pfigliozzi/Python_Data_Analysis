@@ -111,7 +111,7 @@ def calc_angle(x_pos,y_pos,x_cent,y_cent):
 	the origin is at the 12 o'clock position and increases going counter-
 	clockwise
 	'''
-    return 180+180*np.arctan2(x_pos-x_cent,y_cent-y_pos)/np.pi
+	return 180+180*np.arctan2(x_pos-x_cent,y_cent-y_pos)/np.pi
 	
 def nn_distance_angle_seperation(data_frame, number_of_bins, x_cent, y_cent):
 	'''Seperates the nearest neighbor distances into angular bins based
