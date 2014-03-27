@@ -192,6 +192,7 @@ def find_longest_traj(data_frame):
 	for name,grp in grouped:
 		if len(grp)>max_len:
 			max_name=name
+			max_len=len(grp)
 		else:
 			continue
 	return data_frame[data_frame['track id']==max_name]
