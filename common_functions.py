@@ -77,8 +77,10 @@ def y_axis_flip(data_frame, img_height):
 	of the origin from the top left to the bottom left resulting in
 	a flip in the y-axis for all the data. This function flips it 
 	back to values that match the image. It requires knowledge of
-	the height of the original data.'''
+	the height of the original data.
+	'''
 	data_frame['y pos']=abs(data_frame['y pos']-img_height)
+	return data_frame
 
 def least_sq_fit_circle(data_frame):
 	'''Calculate the best fit circle by least squares for the particle
@@ -112,6 +114,11 @@ def calc_angle(x_pos,y_pos,x_cent,y_cent):
 	clockwise
 	'''
 	return 180+180*np.arctan2(x_pos-x_cent,y_cent-y_pos)/np.pi
+
+def calc_radius(x_pos,y_pos,x_cent,y_cent):
+	'''This function finds the radius in polar coordinates with respect to 
+	the centers x_cent and y_cent. This function always produces a positive
+	radius.'''
 	
 def nn_distance_angle_seperation(data_frame, number_of_bins, x_cent, y_cent):
 	'''Seperates the nearest neighbor distances into angular bins based
