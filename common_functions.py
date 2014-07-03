@@ -211,3 +211,18 @@ def find_longest_traj(data_frame):
 		else:
 			continue
 	return data_frame[data_frame['track id']==max_name]
+	
+def import_mosaic_trajectories(file_path=None):
+	'''This function imports the data from the Mosaic trajectories table file
+	into a pandas dataframe'''
+	if file_path==None:
+		root = Tkinter.Tk()
+		root.withdraw()
+		file_path=tkFileDialog.askopenfilename(filetypes=[('mosaic trajectories','.xls')])
+	imported_data=pd.read_csv(file_path,delim_whitespace=True,usecols=[2,1,3,4])
+	imported_data.columns=['track id','frame','y pos','x pos']
+	imported_data=imported_data[['frame','track id','x pos','y pos']]
+	imported_data=imported_data.sort(['frame','track id']).reset_index(drop=True)
+	imported_data['frame']=imported_data['frame']+1
+	print file_path
+	return imported_data,file_path
