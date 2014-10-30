@@ -47,6 +47,29 @@ def find_nn(grp):
 	grp['nn_dist']=[v for v in nn[0]]
 	return grp
 
+def restructure_nn_data_frame(data_frame):
+    '''Restructures the data frame after using the function find_nn such that 
+    each nn has its on line in the dataframe. If there are no nearest neighbors
+    the first one is shown as NaN particle id and inf distance. This function
+    returns the new dataframe with a reset index.
+    '''
+    index_list=data_frame.index
+    nn_part=np.concatenate(data_frame['nn_part'].values)
+    nn_dist=np.concatenate(data_frame['nn_dist'].values)
+    nn_num=np.tile(np.arange(12),len(nn_part)/len(data_frame['nn_part'].iloc[0]))
+    index_new_nn_part=np.repeat(data_frame.index,len(data_frame['nn_part'].iloc[0]))
+    new_nn_part=pd.DataFrame(np.vstack([nn_num,nn_part,nn_dist]).T,
+                             columns=['nn_num2','nn_part2','nn_dist2'],
+                             index=index_new_nn_part)
+    # Filter out nn_num=0
+    new_nn_part=new_nn_part.query('nn_num2>0')
+    # Filter all NaNs and infs above nn_num=2
+    new_nn_part=new_nn_part[(new_nn_part.nn_num2>=1) & 
+                            -((new_nn_part.nn_num2>=2) & 
+                              (new_nn_part.nn_part2.isnull()) & 
+                              (new_nn_part.nn_dist2==np.inf))]
+    return data_frame.join(new_nn_part).reset_index(drop=True)
+	
 def plot_particle_positions(data_frame):
 	'''If the particle data is in a data frame (from matlab_gui_to_data_frame)
 	then this function will plot the position of all the particles.
@@ -266,3 +289,4 @@ def find_nn_theta(grp):
     nn_df=pd.DataFrame(np.vstack((track_ids,nn_num,nn_ids,nn_dist)).T, columns=['track id','theta_nn_num','theta_nn_id','theta_nn_dist'])
     new_df=pd.merge(grp,nn_df, left_on='track id', right_on='track id')
     return new_df
+	
