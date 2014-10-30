@@ -147,9 +147,9 @@ def nn_distance_angle_seperation(data_frame, number_of_bins, x_cent, y_cent):
 	bin_limits=[]
 	for i in range(number_of_bins):
 		if i==0:
-			bin_limits.append([0+bin_size/2,360-bin_size/2])
+			bin_limits.append([0+bin_size/2.0,360-bin_size/2.0])
 		else:
-			bin_limits.append([(i*bin_size)+bin_size/2,(i*bin_size)-bin_size/2])
+			bin_limits.append([(i*bin_size)+bin_size/2.0,(i*bin_size)-bin_size/2.0])
 	radial_bins=[]
 	for step in range(len(bin_limits)):
 		#Define the less than and greater than criterea
@@ -226,3 +226,43 @@ def import_mosaic_trajectories(file_path=None):
 	imported_data['frame']=imported_data['frame']+1
 	print file_path
 	return imported_data,file_path
+	
+def find_nn_theta(grp):
+    '''This function will find all the nearest neighbors for theta and add 
+    columns to the data frame that include the nn number (1st, 2nd,...), the
+    particle id of the nn, and the distance of that nn. The function respects
+    boundary conditions of the data such that it is periodic at 360 degrees.
+    The way to use this function is as such:
+    
+    df=df.groupby('frame', group_keys=False).apply(find_nn_theta).reset_index()
+    df=df[['frame','track id','x pos','y pos','nn_part','nn_dist','theta','r','passing_event','theta_nn_num','theta_nn_id','theta_nn_dist']]
+    
+    The group_keys kwrg prevents a redundant frames column. Reseting the index
+    will give the data frame a regular integer index like before the function
+    is applied. The second line rearranges the columns to the correct order.
+    '''
+    from periodic_kdtree import PeriodicCKDTree
+    bounds=np.array([360])
+    data=grp['theta'].values
+    data=np.reshape(data,[len(data),1])
+    tree=PeriodicCKDTree(bounds,data)
+    d,i=tree.query(data, k=len(data))
+    if len(d)==1: # If only one particle return the group
+        #grp['theta_nn_num'],grp['theta_nn_id'],grp['theta_nn_dist']=[np.nan,np.nan,np.nan]
+        return grp
+    # Create particle id column
+    particle_ids=grp['track id'].values
+    track_ids=np.tile(particle_ids, (len(particle_ids),1))
+    track_ids=track_ids.T[:,1:].flatten()
+    nn_ids=particle_ids[i]
+    # Create nn number column (1st, 2nd, etc)
+    nn_num=np.arange(len(particle_ids))
+    nn_num=np.tile(nn_num,(len(particle_ids),1))[:,1:]
+    nn_num=nn_num.flatten()
+    # Create corresponding nn track id
+    nn_ids=nn_ids[:,1:].flatten()
+    nn_dist=d[:,1:].flatten()
+    # Merge with current group
+    nn_df=pd.DataFrame(np.vstack((track_ids,nn_num,nn_ids,nn_dist)).T, columns=['track id','theta_nn_num','theta_nn_id','theta_nn_dist'])
+    new_df=pd.merge(grp,nn_df, left_on='track id', right_on='track id')
+    return new_df
