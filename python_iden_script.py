@@ -57,7 +57,8 @@ def iden_image(img_array, p_rad, hwhm, d_rad, threshold, mask_rad):
 	res_lm = tid.find_local_max(bp_img, d_rad, threshold)
 	locs, mass, r2 = tid.subpixel_centroid(bp_img, res_lm, mask_rad)
 	return locs, mass, r2
-			
+
+def test_iden_img(
 
 root = Tkinter.Tk()
 root.withdraw()

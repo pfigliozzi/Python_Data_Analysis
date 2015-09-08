@@ -23,7 +23,7 @@ def import_diatrack_txt():
 			templine=[float(i) for i in templine]
 			frame=int(templine[0])
 			for pos in range(1,len(templine)-1,3):
-				imported_data.append([frame,track_id,templine[pos+1],templine[pos]])
+				imported_data.append([frame,track_id,templine[pos],templine[pos+1]])
 				frame+=1
 	imported_data=pd.DataFrame(imported_data,columns=['frame','track id','x pos','y pos'])
 	imported_data= imported_data.sort(['frame','track id'])

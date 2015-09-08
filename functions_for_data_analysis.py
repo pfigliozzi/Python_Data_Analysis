@@ -1,13 +1,18 @@
+import scipy
+import matplotlib.pyplot as plt
+import numpy as np
 
-def import_matlab_gui():
+def import_matlab_gui(file_path=None):
 	'''This function will import data files that are generated from 
 	Rahgu's tracking GUI. Pick a matlab file and the output will be
 	an array'''
 	import scipy.io
-	import Tkinter, tkFileDialog
-	root = Tkinter.Tk()
-	root.withdraw()
-	file_path = tkFileDialog.askopenfilename(filetypes=[('matlab files','.mat')])
+	if file_path == None:
+		import Tkinter, tkFileDialog
+		root = Tkinter.Tk()
+		root.withdraw()
+		file_path = tkFileDialog.askopenfilename(filetypes=[('matlab files','.mat')])
+		root.focus()
 	m=scipy.io.loadmat(str(file_path))['objs_link']
 	if len(m)==0:
 		m=scipy.io.loadmat(str(file_path))['objs']
@@ -101,6 +106,7 @@ def obj_segmentation(threshold_image, largest_obj=1):
 	
 	:returns: bool. array of just the largest object(s)
 	'''
+	import scipy
 	label_objs, num_labels = scipy.ndimage.label(threshold_image)
 	sizes=np.bincount(np.int64(label_objs.ravel()))
 	sizes[0]=0
@@ -130,13 +136,13 @@ def polar_transform(image, origin=None):
 		y=outputcoords[0]*np.sin((outputcoords[1]-180)*np.pi/180)+origin[1]
 		#theta_index=np.round((theta*360/np.pi)/(np.pi*2))
 		return (x,y)
-	return scipy.ndimage.geometric_transform(image, cart2polar, output_shape=(400,360))
+	return scipy.ndimage.geometric_transform(image, cart2polar, output_shape=(300,360))
 	
 def transform_images(array, origin=None):
-	transform=np.zeros((400,360,len(array[1,1,:])))
+	transform=np.zeros((300,360,len(array[1,1,:])))
 	for img in range(len(array[1,1,:])):
 		transform[:,:,img]=polar_transform(array[:,:,img],origin=origin)
-		print "Frame "+str(img)+" complete!"
+		#print "Frame "+str(img)+" complete!"
 	return transform
 	
 def profile_and_image_plot(frames):

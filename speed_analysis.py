@@ -190,16 +190,12 @@ def eliminate_b_box_from_data_frame(data_frame):
 			break
 	return data_frame
 	
-'''def least_sq_fit_ellipse(data_frame):
-	from scipy.spatial.distance import cdist
-	import scipy.optimize
-	xy=data_frame[['x pos','y pos']].values
-	#Find center via center of mass
-	center = np.mean(xy, axis=0).reshape(1,2)
-	radius = cdist(center,xy).mean()
-	#Define the error function to minimize
-	def err_function((x_center, y_center,radius)):
-		err = [np.linalg.norm([x-x_center,y-y_center])-radius for x,y in xy]
-		return (np.array(err)**2).sum()
-	xf,yf,rf=scipy.optimize.fmin(err_function,[center[0,0],center[0,1],radius])
-	return xf,yf,rf'''
+def plot_ang_vs_time(data_frame,x_cent,y_cent):
+	track_id_grp=data_frame.groupby('track id')
+	for name,grp in track_id_grp:
+		theta=[]
+		for value in range(len(grp)):
+			theta.append(180+180*np.arctan2(data_frame['x pos'][value]-x_cent,data_frame['y pos'][value]-y_cent)/np.pi)
+		plt.plot(theta)
+		
+		
