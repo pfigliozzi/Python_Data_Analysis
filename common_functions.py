@@ -533,7 +533,7 @@ def view_trajectories_new_particles(data_frame, particle_size=6.0, frame_window=
     """
     image_frames = []
     traj_palette_count = 0
-    trajectory_palette = ['yellow', 'firebrick', 'lime', 'cyan', 'peachpuff', 'mediumaquamarine', 'lavendarblush', 'plum', 'turquoise', 'wheat', 'palevioletred']
+    trajectory_palette = ['yellow', 'firebrick', 'lime', 'cyan', 'peachpuff', 'mediumaquamarine', 'lavenderblush', 'plum', 'turquoise', 'wheat', 'palevioletred']
     track_color = {}
     data_frame[['frame','track id']] = data_frame[['frame','track id']].astype(int)
     particle_change = 0
