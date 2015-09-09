@@ -521,7 +521,7 @@ def view_trajectories(data_frame, particle_size=6.0, tail_length=10, image_size=
         
     return skimage.viewer.CollectionViewer(image_frames).show()
     
-def view_trajectories_new_particles(data_frame, particle_size=6.0, frame_window=10, tail_length=10, image_size=(380,380)):
+def view_trajectories_new_particles(data_frame, particle_size=6.0, frame_window=5, tail_length=10, image_size=(380,380)):
     """Visualize all the trajectories in the data frame where another particle appears
     or disappears.
     
@@ -537,10 +537,13 @@ def view_trajectories_new_particles(data_frame, particle_size=6.0, frame_window=
     track_color = {}
     data_frame[['frame','track id']] = data_frame[['frame','track id']].astype(int)
     particle_change = 0
+    frame_check = -1
     for frame, grp in data_frame.groupby('frame'):
         # Check if a particle change occurred
-        if particle_change != len(grp['track id']):
+        if particle_change != len(grp['track id']) and frame != frame_check+1:
             particle_change = len(grp['track id'])
+            print frame, frame_check, frame != frame_check+1
+            frame_check = frame
             # Determine which frames to draw
             frames_to_draw = data_frame[((int(frame)-frame_window <= data_frame['frame']) &
                                         (data_frame['frame'] <= frame_window + frame))]
@@ -577,7 +580,6 @@ def view_trajectories_new_particles(data_frame, particle_size=6.0, frame_window=
                 image_frame_array = image_frame_array/255.0
                 new_particle_group.append(image_frame_array)
                 
-            image_frames.append(new_particle_group)
-        
-    for i in image_frames:
-        skimage.viewer.CollectionViewer(i).show()
+            image_frames += new_particle_group
+        #frame_check = frame
+    skimage.viewer.CollectionViewer(image_frames).show(main_window=False)
