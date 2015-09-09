@@ -542,7 +542,6 @@ def view_trajectories_new_particles(data_frame, particle_size=6.0, frame_window=
         # Check if a particle change occurred
         if particle_change != len(grp['track id']) and frame != frame_check+1:
             particle_change = len(grp['track id'])
-            print frame, frame_check, frame != frame_check+1
             frame_check = frame
             # Determine which frames to draw
             frames_to_draw = data_frame[((int(frame)-frame_window <= data_frame['frame']) &
@@ -582,4 +581,4 @@ def view_trajectories_new_particles(data_frame, particle_size=6.0, frame_window=
                 
             image_frames += new_particle_group
         #frame_check = frame
-    skimage.viewer.CollectionViewer(image_frames).show(main_window=False)
+    skimage.viewer.CollectionViewer(image_frames).show()
