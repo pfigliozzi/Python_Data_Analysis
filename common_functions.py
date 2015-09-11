@@ -535,13 +535,18 @@ def view_trajectories_new_particles(data_frame, particle_size=6.0, frame_window=
     traj_palette_count = 0
     trajectory_palette = ['yellow', 'firebrick', 'lime', 'cyan', 'peachpuff', 'mediumaquamarine', 'lavenderblush', 'plum', 'turquoise', 'wheat', 'palevioletred']
     track_color = {}
-    data_frame[['frame','track id']] = data_frame[['frame','track id']].astype(int)
-    particle_change = 0
+    prev_tracks = set()
     frame_check = -1
     for frame, grp in data_frame.groupby('frame'):
         # Check if a particle change occurred
-        if particle_change != len(grp['track id']) and frame != frame_check+1:
-            particle_change = len(grp['track id'])
+        current_tracks = set(list(grp['track id']))
+        if prev_tracks != current_tracks and frame != frame_check+1:
+            changing_particle =  current_tracks - prev_tracks
+            # if len(prev_tracks) < len(current_tracks):
+            #     changing_particle =  current_tracks - prev_tracks
+            if len(prev_tracks) > len(current_tracks):
+                changing_particle =  prev_tracks - current_tracks
+            prev_tracks = set(grp['track id'])
             frame_check = frame
             # Determine which frames to draw
             frames_to_draw = data_frame[((int(frame)-frame_window <= data_frame['frame']) &
@@ -551,12 +556,17 @@ def view_trajectories_new_particles(data_frame, particle_size=6.0, frame_window=
             for frame_draw, frame_grp in frames_to_draw.groupby('frame'):
                 img_frame = Image.new('RGB', image_size, 'black')
                 img_draw = ImageDraw.Draw(img_frame)
-                img_draw.text((3,3), 'Frame '+str(frame_draw), fill='gray')
+                img_draw.text((3,3), 'Frame '+str(frame_draw),  fill='gray')
                 # For each particle in the frame, draw the particle and trajectory tail
                 for idx, particle in frame_grp.iterrows():
-                    ellipse_bb = [tuple(particle['x pos':'y pos'].values-particle_size),
-                                  tuple(particle['x pos':'y pos'].values+particle_size)]
-                    img_draw.ellipse(ellipse_bb, outline='red')
+                    if particle['track id'] in changing_particle:
+                        ellipse_bb = [tuple(particle['x pos':'y pos'].values-particle_size),
+                                      tuple(particle['x pos':'y pos'].values+particle_size)]
+                        img_draw.ellipse(ellipse_bb, outline='green')
+                    else:
+                        ellipse_bb = [tuple(particle['x pos':'y pos'].values-particle_size),
+                                      tuple(particle['x pos':'y pos'].values+particle_size)]
+                        img_draw.ellipse(ellipse_bb, outline='red')
                     track_num = particle['track id']
                     try:
                         track_color[str(track_num)]
@@ -566,7 +576,7 @@ def view_trajectories_new_particles(data_frame, particle_size=6.0, frame_window=
                     line_segments = data_frame.loc[(data_frame['track id']==track_num) & 
                                                ((int(frame_draw)-tail_length <= data_frame['frame']) &
                                                 (data_frame['frame'] <= frame_draw))]
-                    line_segments = line_segments[['x pos','y pos']].values/1 
+                    line_segments = line_segments[['x pos', 'y pos']].values/1 
                     line_segments = line_segments.flatten()
                     if len(line_segments)/2 == 1:
                         img_draw.point(list(line_segments), fill=track_color[str(track_num)])
