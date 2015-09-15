@@ -168,6 +168,15 @@ def polar_coor_data_frame(data_frame, x_cent, y_cent):
     data_frame['theta'] = calc_angle(data_frame['x pos'], data_frame['y pos'], x_cent, y_cent)
     data_frame['r'] = calc_radius(data_frame['x pos'], data_frame['y pos'], x_cent, y_cent)
 
+def calc_x_from_polar(r, theta, x_cent):
+    '''This function will calculate the x coordinate from r and theta. This 
+    will reverse my custom polar transform'''
+    return x_cent + r * np.sin((theta-180.0)*np.pi/180.0)
+
+def calc_y_from_polar(r, theta, y_cent):
+    '''This function will calculate the y coordinate from r and theta. This 
+    will reverse my custom polar transform'''
+    return x_cent - r * np.cos((theta-180.0)*np.pi/180.0)
 
 def nn_distance_angle_seperation(data_frame, number_of_bins, x_cent, y_cent):
     '''Seperates the nearest neighbor distances into angular bins based
@@ -592,3 +601,36 @@ def view_trajectories_new_particles(data_frame, particle_size=6.0, frame_window=
             image_frames += new_particle_group
         #frame_check = frame
     skimage.viewer.CollectionViewer(image_frames).show()
+
+def trackpy_rot_motion_linker(data_frame, search_range, rot_velocity=0.0, memory=0, *kwrgs):
+    '''A wrapper for trackpy linking that includes a predictor for rotating particles
+
+    :params data_frame: DataFrame containing all the particle position information
+    :params search_range: Max distance a particle can move between frames
+    :params rot_velocity: The bias (in degrees) that a candidate particle should be
+    found at. This is positive for positive L's
+    :params memory: The number of frames a particle can disappear for and still be 
+    considered the same particle.
+    :params kwrgs: Additional keyword arguments passed to trackpy.link_df
+    '''
+
+    # Find the particle locations in polar coords
+    xf, yf, rf = least_sq_fit_circle(data_frame)
+    polar_coor_data_frame(data_frame, xf, yf)
+
+    # Generate the predictor function
+    @trackpy.predict.predictor
+    def predict(t1, particle):
+        theta = calc_angle(particle.pos[0], particle.pos[1], xf, yf)
+        r = calc_radius(particle.pos[0], particle.pos[1], xf, yf)
+        new_theta = theta + rot_velocity * (t1 - particle.t)
+        new_theta %= 360.0
+        new_x = calc_x_from_polar(r, new_theta, xf)
+        new_y = calc_y_from_polar(r, theta, yf)
+        return np.array((new_x,new_y))
+    
+    # Track the data and restructure the resulting DataFrame
+    trackpy.link_df(data_frame, search_range, memory=memory, pos_columns=['x pos', 'y pos'],
+                    retain_index=True, link_strategy='numba', predictor=predict)
+    data_frame['track id'] = data_frame['particle']
+    del data_frame['particle']
