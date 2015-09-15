@@ -9,6 +9,8 @@ import os
 import sys
 import skimage.viewer
 from PIL import Image, ImageDraw, ImageColor
+import trackpy
+import trackpy.predict
 
 
 def import_matlab_gui(file_path=None):
@@ -176,7 +178,7 @@ def calc_x_from_polar(r, theta, x_cent):
 def calc_y_from_polar(r, theta, y_cent):
     '''This function will calculate the y coordinate from r and theta. This 
     will reverse my custom polar transform'''
-    return x_cent - r * np.cos((theta-180.0)*np.pi/180.0)
+    return y_cent - r * np.cos((theta-180.0)*np.pi/180.0)
 
 def nn_distance_angle_seperation(data_frame, number_of_bins, x_cent, y_cent):
     '''Seperates the nearest neighbor distances into angular bins based
