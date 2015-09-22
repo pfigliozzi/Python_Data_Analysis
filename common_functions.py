@@ -628,7 +628,7 @@ def trackpy_rot_motion_linker(data_frame, search_range, rot_velocity=0.0, memory
         new_theta = theta + rot_velocity * (t1 - particle.t)
         new_theta %= 360.0
         new_x = calc_x_from_polar(r, new_theta, xf)
-        new_y = calc_y_from_polar(r, theta, yf)
+        new_y = calc_y_from_polar(r, new_theta, yf)
         return np.array((new_x,new_y))
     
     # Track the data and restructure the resulting DataFrame
