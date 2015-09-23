@@ -55,6 +55,40 @@ def find_nn(grp):
     grp['nn_dist'] = [v for v in nn[0]]
     return grp
 
+def find_nn_ver_2(grp):
+    '''This function will find all the nearest neighbors in x-y and add 
+    columns to the data frame that include the nn number (1st, 2nd,...), the
+    particle id of the nn, and the distance of that nn.
+    The way to use this function is as such:
+    
+    df.groupby('frame',group_keys=False).apply(find_nn).reset_index()
+    df=df[['frame','track id','x pos','y pos','nn_num','nn_id','nn_dist','theta','r']]
+    
+    The group_keys kwarg prevents a redundant frames column. Reseting the index
+    will give the data frame a regular integer index like before the function
+    is applied. The second line rearranges the columns to the correct order.
+    '''
+    xy_data=grp[['x pos','y pos']]
+    tree=scipy.spatial.KDTree(xy_data)
+    nn_d, nn_i=tree.query(xy_data, k=len(xy_data))
+    if len(nn_d)==1: # If only one particle return the group
+        #grp['nn_num'],grp['nn_id'],grp['nn_dist']=[np.nan,np.nan,np.nan]
+        return grp
+    particle_ids=grp['track id'].values
+    track_ids=np.tile(particle_ids, (len(particle_ids),1))
+    track_ids=track_ids.T[:,1:].flatten()
+    nn_ids=particle_ids[nn_i]
+    # Create nn number column (1st, 2nd, etc)
+    nn_num=np.arange(len(particle_ids))
+    nn_num=np.tile(nn_num,(len(particle_ids),1))[:,1:]
+    nn_num=nn_num.flatten()
+    # Create corresponding nn track id
+    nn_ids=nn_ids[:,1:].flatten()
+    nn_dist=nn_d[:,1:].flatten()
+    # Merge with current group
+    nn_df=pd.DataFrame(np.vstack((track_ids,nn_num,nn_ids,nn_dist)).T, columns=['track id','nn_num','nn_id','nn_dist'])
+    new_df=pd.merge(grp,nn_df, left_on='track id', right_on='track id')
+    return new_df
 
 def restructure_nn_data_frame(data_frame):
     '''Restructures the data frame after using the function find_nn such that 
