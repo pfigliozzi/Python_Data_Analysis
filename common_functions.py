@@ -360,7 +360,15 @@ def find_nn_theta(grp):
     return new_df
 
 
-def nn_distance_angle_seperation_ver_2(data_frame, number_of_bins, nn_num):
+def nn_distance_angle_seperation_ver_2(data_frame, number_of_bins, nn_num_limit):
+    '''Seperates the nearest neighbor distances into angular bins based
+    on their theta values and their nn_dist. This function only works 
+    if you use the find_nn_ver_2 where each nn has its own line in the data_frame.
+    
+    :pram data_frame: data_frame of the particle tracks you want to seperate
+    :pram number_of_bins: number of angular bins you want
+    :pram (int) nn_num_limit: Up to which nn_num you want to find the distances for 
+    '''
     if 360 % number_of_bins != 0:
         print "Error: Number of bins must be divide 360 without remainders"
         return None
@@ -376,8 +384,8 @@ def nn_distance_angle_seperation_ver_2(data_frame, number_of_bins, nn_num):
             bin_limits.append([(i * bin_size) + bin_size / 2.0, (i * bin_size) - bin_size / 2.0])
     radial_bins = []
     nn_theta_data_frame = data_frame.copy()
-    theta_nn_ids = nn_theta_data_frame[['frame', 'nn_part2', 'track id']]
-    frame_particle_id_reindex = nn_theta_data_frame.set_index(['frame', 'track id', 'nn_part2'])
+    theta_nn_ids = nn_theta_data_frame[['frame', 'nn_id', 'track id']]
+    frame_particle_id_reindex = nn_theta_data_frame.set_index(['frame', 'track id', 'nn_id'])
     theta_values_nn = frame_particle_id_reindex.ix[[tuple(v) for v in theta_nn_ids.values]]['theta'].values
     nn_theta_data_frame['nn_theta_val'] = theta_values_nn
 
@@ -385,21 +393,21 @@ def nn_distance_angle_seperation_ver_2(data_frame, number_of_bins, nn_num):
         if step == 0:
             valid_positions = nn_theta_data_frame[((nn_theta_data_frame.theta <= bin_limits[step][0]) |
                                                    (nn_theta_data_frame.theta >= bin_limits[step][1])) &
-                                                  -(nn_theta_data_frame.nn_part2 == np.nan)]
-            valid_positions = valid_positions[valid_positions['track id'] < valid_positions.nn_part2]
-            valid_positions = valid_positions[valid_positions.nn_num2 <= nn_num]
+                                                  -(nn_theta_data_frame.nn_id == np.nan)]
+            valid_positions = valid_positions[valid_positions['track id'] < valid_positions.nn_id]
+            valid_positions = valid_positions[valid_positions.nn_num <= nn_num_limit]
             valid_positions = valid_positions[(valid_positions.nn_theta_val <= bin_limits[step][0]) |
                                               (valid_positions.theta >= bin_limits[step][1])]
-            radial_bins.append(valid_positions.nn_dist2.values)
+            radial_bins.append(valid_positions.nn_dist.values)
         else:
             valid_positions = nn_theta_data_frame[((nn_theta_data_frame.theta <= bin_limits[step][0]) &
                                                    (nn_theta_data_frame.theta >= bin_limits[step][1])) &
-                                                  -(nn_theta_data_frame.nn_part2 == np.nan)]
-            valid_positions = valid_positions[valid_positions['track id'] < valid_positions.nn_part2]
-            valid_positions = valid_positions[valid_positions.nn_num2 <= nn_num]
+                                                  -(nn_theta_data_frame.nn_id == np.nan)]
+            valid_positions = valid_positions[valid_positions['track id'] < valid_positions.nn_id]
+            valid_positions = valid_positions[valid_positions.nn_num <= nn_num_limit]
             valid_positions = valid_positions[(valid_positions.nn_theta_val <= bin_limits[step][0]) &
                                               (valid_positions.theta >= bin_limits[step][1])]
-            radial_bins.append(valid_positions.nn_dist2.values)
+            radial_bins.append(valid_positions.nn_dist.values)
     return radial_bins, bin_limits
 
 
