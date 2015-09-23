@@ -124,9 +124,6 @@ def plot_particle_positions(data_frame):
     plt.xlabel('Pixels')
     plt.ylabel('Pixels')
 
-
-# plt.show()
-
 def polar_transform_points(data_frame, origin=None):
     '''Polar transforms the particle positions in all frames around
 	a defined center (origin).'''
