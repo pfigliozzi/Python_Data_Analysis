@@ -166,7 +166,7 @@ def least_sq_fit_circle(data_frame):
         err = np.sqrt((xy[:, 0] - x_center) ** 2 + (xy[:, 1] - y_center) ** 2) - radius
         return (err ** 2).sum()
 
-    xf, yf, rf = scipy.optimize.fmin(err_function, [center[0, 0], center[0, 1], radius])
+    xf, yf, rf = scipy.optimize.fmin(err_function, [center[0, 0], center[0, 1], radius], disp=False)
     return xf, yf, rf
 
 
