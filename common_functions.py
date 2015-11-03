@@ -675,3 +675,12 @@ def trackpy_rot_motion_linker(data_frame, search_range, rot_velocity=0.0, memory
                     retain_index=True, link_strategy='numba', predictor=predict)
     data_frame['track id'] = data_frame['particle']
     del data_frame['particle']
+
+def notebook_title_info(notebook_full_path):
+    import re
+    notebook_name = os.path.split(notebook_full_path)[-1]
+    serial_number = re.search('(Ana_.* - )', notebook_name)
+    serial_number = serial_number.groups()[0][:-3]
+    subtitle = re.search('( - .*)', notebook_name)
+    subtitle = subtitle.groups()[0][3:]
+    return [notebook_name, serial_number, subtitle]
