@@ -418,7 +418,7 @@ def restructure_nn_data_frame(data_frame):
     nn_part = np.concatenate(data_frame['nn_part'].values)
     nn_dist = np.concatenate(data_frame['nn_dist'].values)
     nn_num = np.tile(np.arange(12), len(nn_part) / len(data_frame['nn_part'].iloc[0]))
-    index_new_nn_part = np.repeat(data_frame.index, len(data_frame['nn_part'].iloc[0]))
+    index_new_nn_part = np.repeat(data_frame.index.values, len(data_frame['nn_part'].iloc[0]))
     new_nn_part = pd.DataFrame(np.vstack([nn_num, nn_part, nn_dist]).T,
                                columns=['nn_num2', 'nn_part2', 'nn_dist2'],
                                index=index_new_nn_part)
@@ -643,7 +643,7 @@ def view_trajectories_new_particles(data_frame, particle_size=6.0, frame_window=
         #frame_check = frame
     skimage.viewer.CollectionViewer(image_frames).show()
 
-def trackpy_rot_motion_linker(data_frame, search_range, rot_velocity=0.0, memory=0, *kwrgs):
+def trackpy_rot_motion_linker(data_frame, search_range, rot_velocity=0.0, memory=0, **kwargs):
     '''A wrapper for trackpy linking that includes a predictor for rotating particles
 
     :params data_frame: DataFrame containing all the particle position information
@@ -672,7 +672,7 @@ def trackpy_rot_motion_linker(data_frame, search_range, rot_velocity=0.0, memory
     
     # Track the data and restructure the resulting DataFrame
     trackpy.link_df(data_frame, search_range, memory=memory, pos_columns=['x pos', 'y pos'],
-                    retain_index=True, link_strategy='numba', predictor=predict)
+                    retain_index=True, link_strategy='numba', predictor=predict, **kwargs)
     data_frame['track id'] = data_frame['particle']
     del data_frame['particle']
 
