@@ -530,7 +530,7 @@ def view_trajectories(data_frame, particle_size=6.0, tail_length=10, image_size=
     image_frames = []
     traj_palette_count = 0
     # Colors to use for Trajectories
-    trajectory_palette = ['yellow', 'firebrick', 'lime', 'cyan', 'peachpuff', 'mediumaquamarine', 'lavendarblush']
+    trajectory_palette = ['yellow', 'firebrick', 'lime', 'cyan', 'peachpuff', 'mediumaquamarine', 'lavenderblush', 'plum', 'turquoise', 'wheat', 'palevioletred']
     track_color = {}
     data_frame[['frame','track id']] = data_frame[['frame','track id']].astype(int)
     re_index_df = data_frame.set_index(['track id', 'frame'])
