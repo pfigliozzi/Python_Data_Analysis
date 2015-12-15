@@ -684,3 +684,44 @@ def notebook_title_info(notebook_full_path):
     subtitle = re.search('( - .*)', notebook_name)
     subtitle = subtitle.groups()[0][3:]
     return [notebook_name, serial_number, subtitle]
+
+def add_list_of_dfs_to_hdf(hdf_obj, dfs_list, experiment_name, movie_names_list, selector_metadata, individual_metadata=None):
+    '''A function for adding DataFrames to an HDF5 file and making entries
+    to the index table used to select based on metadata
+    
+    :param hdf_obj: an HDFStore pandas object to store the data in
+    :param dfs_list: A list of the data frames you want to add to the HDF file
+    :param (str) experiment_name: A string to tag the experiment that all 
+    DataFrames in dfs_list falls under
+    :param (list) movie_names_list: A list of strings to name each of the 
+    DataFrames by in dfs_list. Must be the same length as dfs_list
+    :param (dict) selector_metadata: A dictionary of keys and values to describe
+    the data that will be put in the indexer table. They can contain single
+    values or a list of length equal to dfs_list.
+    '''
+    selector_df = pd.DataFrame(selector_metadata)
+    #selector_df['mov_index'] = selector_df.index.values+ 1 
+    for num,i in enumerate(dfs_list):
+        movie_name = re.search('(Mov_[0123456789]{8})',movie_names_list[num])
+        key = experiment_name+'/'+movie_name.groups()[0]
+        selector_df.loc[num, 'mov_index'] = int(movie_name.groups()[0][-2:])
+        selector_df.loc[num, 'key'] = key
+        hdf_obj.put(key, i)
+    # Pandas will make the mov_index column Floats because appending will make it
+    # have NaNs.
+    selector_df.loc[:,'mov_index'] = selector_df.loc[:,'mov_index'].astype('float64')
+    try:
+        hdf_obj.get('index')
+    except KeyError:
+        hdf_obj.put('index', selector_df)
+    if selector_df.isin(hdf_obj.index.reset_index()).all().all() == True:
+        print "Values already in index!"
+        return
+    elif selector_df.isin(hdf_obj.index.reset_index()).any().any() == False:
+        print "Some values of the index match while others don't"
+        print selector_df[selector_df.isin(hdf_obj.index)]
+        return 
+    else:
+        hdf_obj.append('index', selector_df)
+        hdf_obj.put('index', hdf_obj.index.reset_index(drop=True))
+        return
