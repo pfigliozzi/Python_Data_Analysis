@@ -7,6 +7,7 @@ from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 import os
 import sys
+import re
 import skimage.viewer
 from PIL import Image, ImageDraw, ImageColor
 import trackpy
@@ -725,3 +726,103 @@ def add_list_of_dfs_to_hdf(hdf_obj, dfs_list, experiment_name, movie_names_list,
         hdf_obj.append('index', selector_df)
         hdf_obj.put('index', hdf_obj.index.reset_index(drop=True))
         return
+
+def find_k_nn(grp, num_nn_k=None):
+    '''This function will find the k nearest neighbors in x-y and add 
+    columns to the data frame that include the nn number (1st, 2nd,...), the
+    particle id of the nn, and the distance of that nn.
+    The way to use this function is as such:
+    
+    df.groupby('frame',group_keys=False).apply(find_k_nn, num_nn_k=X)
+    
+    The group_keys kwarg prevents a redundant frames column. Reseting the index
+    will give the data frame a regular integer index like before the function
+    is applied. The second line rearranges the columns to the correct order.
+    '''
+    xy_data = grp[['x pos','y pos']]
+    tree = scipy.spatial.KDTree(xy_data)
+    if num_nn_k == None:
+        num_nn_k = len(xy_data)
+    elif num_nn_k > len(xy_data)-1:
+        num_nn_k = len(xy_data)
+    elif num_nn_k != None:
+        num_nn_k += 1
+    nn_d, nn_i = tree.query(xy_data, k=num_nn_k)
+    if len(nn_d)==1: # If only one particle return the group
+        grp['nn_num'] = np.nan
+        grp['nn_id'] = np.nan
+        grp['nn_dist'] = np.nan
+        return grp
+    particle_ids = grp['track id'].values
+    track_ids = np.tile(particle_ids, (num_nn_k,1))
+    track_ids = track_ids.T[:,1:].flatten()
+    nn_ids = particle_ids[nn_i][:,1:].flatten()
+    nn_dist = nn_d[:,1:].flatten()
+    # Create nn number column (1st, 2nd, etc)
+    nn_num = np.arange(len(nn_d[0]))
+    nn_num = np.tile(nn_num,(len(particle_ids),1))[:,1:]
+    nn_num = nn_num.flatten()
+    # Merge with current group
+    nn_df = pd.DataFrame(np.vstack((track_ids, nn_num, nn_ids, nn_dist)).T, columns=['track id','nn_num','nn_id','nn_dist'])
+    new_df = pd.merge(grp, nn_df, left_on='track id', right_on='track id')
+    return new_df
+
+def find_k_nn_theta(grp, num_nn_k=None):
+    '''This function will find the k nearest neighbors for theta and add 
+    columns to the data frame that include the nn number (1st, 2nd,...), the
+    particle id of the nn, and the distance of that nn. The function respects
+    boundary conditions of the data such that it is periodic at 360 degrees.
+    The way to use this function is as such:
+    
+    df=df.groupby('frame', group_keys=False).apply(find_k_nn_theta, num_nn_k=x)
+    
+    The group_keys kwrg prevents a redundant frames column. Reseting the index
+    will give the data frame a regular integer index like before the function
+    is applied. The second line rearranges the columns to the correct order.
+    '''
+    from periodic_kdtree import PeriodicCKDTree
+    bounds = np.array([360])
+    data = grp['theta'].values
+    data = np.reshape(data, [len(data), 1])
+    tree = PeriodicCKDTree(bounds, data)
+    if num_nn_k == None:
+        num_nn_k = len(data)
+    elif num_nn_k > len(data)-1:
+        num_nn_k = len(data)
+    elif num_nn_k != None:
+        num_nn_k += 1
+    d, i = tree.query(data, k=num_nn_k)
+    if len(d) == 1:  # If only one particle return the group
+        grp['theta_nn_num'] = np.nan
+        grp['theta_nn_id'] = np.nan
+        grp['theta_nn_dist'] = np.nan        
+        return grp
+    # Create particle id column
+    particle_ids = grp['track id'].values
+    track_ids = np.tile(particle_ids, (num_nn_k, 1))
+    track_ids = track_ids.T[:, 1:].flatten()
+    nn_ids = particle_ids[i]
+    # Create nn number column (1st, 2nd, etc)
+    nn_num = np.arange(num_nn_k)
+    nn_num = np.tile(nn_num, (len(particle_ids), 1))[:, 1:]
+    nn_num = nn_num.flatten()
+    # Create corresponding nn track id
+    nn_ids = nn_ids[:, 1:].flatten()
+    nn_dist = d[:, 1:].flatten()
+    # Merge with current group
+    nn_df = pd.DataFrame(np.vstack((track_ids, nn_num, nn_ids, nn_dist)).T,
+                         columns=['track id', 'theta_nn_num', 'theta_nn_id', 'theta_nn_dist'])
+    new_df = pd.merge(grp, nn_df, left_on='track id', right_on='track id')
+    return new_df
+
+def find_k_nn_xy_and_theta(grp, num_nn_k=None):
+    '''This function will find the k nearest neighbors in xy and also in theta
+    and add them to the DataFrame. The way to use this function is:
+    
+    df=df.groupby('frame', group_keys=False).apply(find_k_nn_xy_and_theta, num_nn_k=x)
+    '''
+    grp_copy = grp.copy()
+    xy_grp = find_k_nn(grp_copy, num_nn_k)
+    theta_grp = find_k_nn_theta(grp_copy, num_nn_k)
+    new_df = pd.concat([xy_grp, theta_grp.loc[:,['theta_nn_num', 'theta_nn_id', 'theta_nn_dist']]], axis=1)
+    return new_df
