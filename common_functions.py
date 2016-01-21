@@ -367,12 +367,15 @@ def nn_distance_angle_seperation_ver_2(data_frame, number_of_bins, nn_num_limit)
     :pram number_of_bins: number of angular bins you want
     :pram (int) nn_num_limit: Up to which nn_num you want to find the distances for 
     '''
+    # Make sure the number of bins is even and divides 360 w/0 remainders
     if 360 % number_of_bins != 0:
         print "Error: Number of bins must be divide 360 without remainders"
         return None
     if number_of_bins / 2 % 2 != 0:
         print "Error: Half the number of bins must be even"
         return None
+
+    # Create the bin limits with bin centers at 12, 3, 6, and 9 o'clock
     bin_size = 360 / number_of_bins
     bin_limits = []
     for i in range(number_of_bins):
@@ -381,6 +384,10 @@ def nn_distance_angle_seperation_ver_2(data_frame, number_of_bins, nn_num_limit)
         else:
             bin_limits.append([(i * bin_size) + bin_size / 2.0, (i * bin_size) - bin_size / 2.0])
     radial_bins = []
+
+    # Find the theta values of each of the nearest neighbors. This is done by reindexing w.r.t. frame, nn_id
+    # track id and pick from that index (frame, track id, nn_id). This is used to check that the nearest
+    # neighbor is in the same theta bin as the other particle
     nn_theta_data_frame = data_frame.copy()
     theta_nn_ids = nn_theta_data_frame[['frame', 'nn_id', 'track id']]
     frame_particle_id_reindex = nn_theta_data_frame.set_index(['frame', 'track id', 'nn_id'])
@@ -389,15 +396,22 @@ def nn_distance_angle_seperation_ver_2(data_frame, number_of_bins, nn_num_limit)
 
     for step in range(len(bin_limits)):
         if step == 0:
+            # Need a special step for the first bin in order to satisfy the 360 to 0 transition.
+            # Find the particles that have a theta in the first bin, also drop NaNs for nn_id
             valid_positions = nn_theta_data_frame[((nn_theta_data_frame.theta <= bin_limits[step][0]) |
                                                    (nn_theta_data_frame.theta >= bin_limits[step][1])) &
                                                   -(nn_theta_data_frame.nn_id == np.nan)]
+            # Drop duplicate nearest neighbor pairs (using i<j indexing)
             valid_positions = valid_positions[valid_positions['track id'] < valid_positions.nn_id]
+            # Choose only nearest neighbors in less than or equal to nn_num_limit (e.g. nn_num_limit=1 then
+            # only use first nearest neighbor)
             valid_positions = valid_positions[valid_positions.nn_num <= nn_num_limit]
+            # Only use nearest neighbors that have both particles in the same bin.
             valid_positions = valid_positions[(valid_positions.nn_theta_val <= bin_limits[step][0]) |
                                               (valid_positions.theta >= bin_limits[step][1])]
             radial_bins.append(valid_positions.nn_dist.values)
         else:
+            # Every other angular bin uses this block of code. The processes is the same as above
             valid_positions = nn_theta_data_frame[((nn_theta_data_frame.theta <= bin_limits[step][0]) &
                                                    (nn_theta_data_frame.theta >= bin_limits[step][1])) &
                                                   -(nn_theta_data_frame.nn_id == np.nan)]
