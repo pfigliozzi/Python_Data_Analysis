@@ -849,3 +849,48 @@ def find_k_nn_xy_and_theta(grp, num_nn_k=None):
     theta_grp = find_k_nn_theta(grp_copy, num_nn_k)
     new_df = pd.concat([xy_grp, theta_grp.loc[:,['theta_nn_num', 'theta_nn_id', 'theta_nn_dist']]], axis=1)
     return new_df
+
+def plot_positions_on_image(image_path, dfs_positions, save_path=None, particle_size=6.0):
+    """Draws particle positions from one or more DataFrames onto raw data
+    
+    :param image_path: The path where the raw data is. Expect an image sequence of tifs that is ordered when glob
+    is called.
+    :param dfs_positions: A list of DataFrame objects that have particle positions in "frame", "x pos" and "y pos"
+    that will be drawn on the raw data
+    :param save_path: The path where the new images will be saved. If the directory does not exist it will be created
+    :param particle_size: The size to draw each particle (in pixels) around each position.
+    """
+    
+    try:
+        os.chdir(save_path)
+    except WindowsError:
+        os.mkdir(save_path)
+        os.chdir(save_path)
+    image_list = glob.glob(image_path+"*.tif")
+
+    trajectory_palette = ['yellow', 'firebrick', 'lime', 'cyan', 'peachpuff', 'mediumaquamarine', 'lavenderblush', 'plum', 'turquoise', 'wheat', 'palevioletred']
+    for num, img_name in enumerate(image_list):
+        # Load the image
+        file_name = os.path.split(img_name)[-1]
+        file_name = os.path.splitext(file_name)[0]
+        curr_image = Image.open(img_name)
+        
+        # Rescale image so it shows up in a png
+        img_arr = np.array(curr_image.getdata()).reshape(curr_image.size)
+        min_pixel = np.min(img_arr)
+        img_arr = img_arr - min_pixel
+        max_pixel = np.max(img_arr)
+        scale = 255/float(max_pixel)
+        img_arr = np.round(img_arr * scale)
+        curr_image = Image.fromarray(img_arr)
+        rgb_image = curr_image.convert(mode='RGB')
+        img_draw = ImageDraw.Draw(rgb_image)
+        for num2,df in enumerate(dfs_positions):
+            frame = df[df.frame == num+1]
+            points = list(frame.loc[:,'x pos':'y pos'].values.flatten())
+            img_draw.point(points, fill=trajectory_palette[num2])
+            for idx, particle in frame.iterrows():
+                ellipse_bb = [tuple(particle['x pos':'y pos'].values-particle_size),
+                              tuple(particle['x pos':'y pos'].values+particle_size)]
+                img_draw.ellipse(ellipse_bb, outline=trajectory_palette[num2])
+        rgb_image.save(file_name+'.png')
