@@ -12,6 +12,7 @@ import skimage.viewer
 from PIL import Image, ImageDraw, ImageColor
 import trackpy
 import trackpy.predict
+import gc
 
 
 def import_matlab_gui(file_path=None):
@@ -584,7 +585,8 @@ def view_trajectories(data_frame, particle_size=6.0, tail_length=10, image_size=
         image_frame_array = image_frame_array/255.0
         image_frames.append(image_frame_array)
         
-    return skimage.viewer.CollectionViewer(image_frames).show()
+    skimage.viewer.CollectionViewer(image_frames).show()
+    gc.collect()
     
 def view_trajectories_new_particles(data_frame, particle_size=6.0, frame_window=5, tail_length=10, image_size=(380,380)):
     """Visualize all the trajectories in the data frame where another particle appears
