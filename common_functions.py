@@ -213,6 +213,13 @@ def calc_y_from_polar(r, theta, y_cent):
     will reverse my custom polar transform'''
     return y_cent - r * np.cos((theta-180.0)*np.pi/180.0)
 
+def calc_cent_from_polar(x, y, r, theta):
+    '''This function will calculate the center of the fitted circle of my custom
+    polar transform'''
+    x_cent = x + r * np.sin(theta * np.pi / 180.0)
+    y_cent = y - r * np.cos(theta * np.pi / 180.0)
+    return x_cent, y_cent
+
 def nn_distance_angle_seperation(data_frame, number_of_bins, x_cent, y_cent):
     '''Seperates the nearest neighbor distances into angular bins based
 	on the peak location. This function only works if you are picking peaks
