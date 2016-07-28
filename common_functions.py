@@ -666,8 +666,9 @@ def view_trajectories_new_particles(data_frame, particle_size=6.0, frame_window=
             image_frames += new_particle_group
         #frame_check = frame
     skimage.viewer.CollectionViewer(image_frames).show()
+    gc.collect()
 
-def trackpy_rot_motion_linker(data_frame, search_range, rot_velocity=0.0, memory=0, **kwargs):
+def trackpy_rot_motion_linker(data_frame, search_range, rot_velocity=0.0, memory=0, theta_lim_bias=[0,360], **kwargs):
     '''A wrapper for trackpy linking that includes a predictor for rotating particles
 
     :params data_frame: DataFrame containing all the particle position information
@@ -676,6 +677,8 @@ def trackpy_rot_motion_linker(data_frame, search_range, rot_velocity=0.0, memory
     found at. This is positive for positive L's
     :params memory: The number of frames a particle can disappear for and still be 
     considered the same particle.
+    :params theta_lim_bias: The limits in degrees theta to apply the rotational bias.
+    If a particle is outside this range then no bias is applied.
     :params kwrgs: Additional keyword arguments passed to trackpy.link_df
     '''
 
@@ -688,11 +691,14 @@ def trackpy_rot_motion_linker(data_frame, search_range, rot_velocity=0.0, memory
     def predict(t1, particle):
         theta = calc_angle(particle.pos[0], particle.pos[1], xf, yf)
         r = calc_radius(particle.pos[0], particle.pos[1], xf, yf)
-        new_theta = theta + rot_velocity * (t1 - particle.t)
-        new_theta %= 360.0
-        new_x = calc_x_from_polar(r, new_theta, xf)
-        new_y = calc_y_from_polar(r, new_theta, yf)
-        return np.array((new_x,new_y))
+        if theta_lim_bias[0] < theta < theta_lim_bias[1]:
+            new_theta = theta + rot_velocity * (t1 - particle.t)
+            new_theta %= 360.0
+            new_x = calc_x_from_polar(r, new_theta, xf)
+            new_y = calc_y_from_polar(r, new_theta, yf)
+            return np.array((new_x,new_y))
+        else:
+            return np.array((particle.pos[0], particle.pos[1]))
     
     # Track the data and restructure the resulting DataFrame
     trackpy.link_df(data_frame, search_range, memory=memory, pos_columns=['x pos', 'y pos'],
