@@ -375,19 +375,22 @@ default_frame_rate = 90.00
 default_radius = 0.075
 default_viscosity = 1.002
 
-def calc_velocities_consec_frames(df, frame_rate=default_frame_rate, um_conv=default_um_conv, theta_range=[120,240]):
+def calc_velocities_consec_frames(df, frame_rate=default_frame_rate, um_conv=default_um_conv, theta_range=[120,240], only_over_plate=True):
     '''Calculates the velocity of particles in the data frame within a specified part of the ring
     trap and only counts consecutive frames (where the particle does not disappear).
 
     :param df: DataFrame that contains the trajectory information with keys 
-    ['frame','track id','x pos','y pos', 'over_plate]
+    ['frame','track id','x pos','y pos', 'over_plate']
     :param frame_rate: The frame rate that the experiment was recorded at
     :param um_conv: The conversion factor to convert position from pixels to um.
     :param theta_range: Tuple (2 elements) which describe the lower and upper limits of theta that you want
     to find the velocity of particles over (e.g. the theta range of particles over the nanoplate)
+    :param over_plate: If True then only particles over the nanoplate are considered. If False all particles
+    velocities are calculated.
     '''
     df_temp = df.query('@theta_range[0] < theta < @theta_range[1]')
-    df_temp = df_temp[df_temp['over_plate'] == True]
+    if only_over_plate == True:
+        df_temp = df_temp[df_temp['over_plate'] == True]
     df_temp = df_temp.drop_duplicates(subset=['frame', 'track id'], keep='first')
     displacements = df_temp.groupby('track id', group_keys=False).apply(displacement_calc) 
     velocities = displacements * um_conv * frame_rate
