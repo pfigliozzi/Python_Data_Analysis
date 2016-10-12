@@ -13,6 +13,7 @@ from PIL import Image, ImageDraw, ImageColor
 import trackpy
 import trackpy.predict
 import gc
+import glob
 
 
 def import_matlab_gui(file_path=None):
