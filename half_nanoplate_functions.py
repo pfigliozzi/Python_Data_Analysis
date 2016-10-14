@@ -449,6 +449,9 @@ def add_barrier_crossing_index(df, theta_range=(220,300)):
     df_subset = df_copy.query('@theta_range[0] < theta < @theta_range[1]')
     df_subset = df_subset.drop_duplicates(subset=['frame', 'track id'], keep='first')
     
+    # I call a pd.merge in the next two blocks in order to make all the duplicate entries in the original
+    # DataFrame also be correctly marked True for last_frame_plate and first_frame_glass
+
     # Find the a transitioning particles' last frame on plate
     leaving_plate = df_subset.groupby('track id', group_keys=False).apply(check_over_glass_future)
     index_leaving_plate = pd.merge(df_copy, leaving_plate, on=['frame', 'track id'], right_index=True).index
