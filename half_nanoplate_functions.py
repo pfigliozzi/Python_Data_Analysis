@@ -354,7 +354,41 @@ def hist_bin_optimization(data, data_range=None, max_bins=None):
     idx_min_cost = np.argmin(cost_results)
     return bin_numbers[idx_min_cost]
 
-
+def hist_bin_optimization_continuous(data, data_range=None, max_bins=200):
+    '''Uses the Shimazaki histogram binwidth optimization for a given
+    data set of continuous data and returns the optimal number of bins
+    
+    This function attempts to find the optimal number of bins for a 
+    data set you want to histogram. The optimization method was 
+    developed by Shimazaki with ref:
+    
+    Shimazaki and Shinomoto. Neural Comput, 2007, 19(6), 1503-1527
+    
+    The function should work with any continuous data set.
+    
+    :param data: List or array of your data that you will histogram
+    :param (tuple) data_range: The range that you plan on making a
+    histogram of the data. You should use this range when you make your
+    histogram after finding the optimal number of bins.
+    :param (int) max_bins: The maximum number of bins you will allow for
+    the given range. Your max bins must be less than your sampling
+    frequency. If you data looks over binned try reducing this number
+    '''
+    
+    if data_range == None:
+        data_range = [min(data), max(data)]
+    bin_numbers = range(1,max_bins)
+    cost_results = []
+    for bin_num in bin_numbers:
+        bin_width = (data_range[1] - data_range[0])/float(bin_num)
+        counts, bins = np.histogram(data, bins=bin_num, range=data_range)
+        mean_counts = np.mean(counts)
+        variance = np.sum((counts - mean_counts)**2)/float(bin_num)
+        c = (2*mean_counts - variance)/float(bin_width)**2
+        cost_results.append(c)
+    cost_results = np.array(cost_results)
+    idx_min_cost = np.argmin(cost_results)
+    return bin_numbers[idx_min_cost]
 
 def displacement_calc(group):
     '''Calculates the displacement of the group with an x and y position. Use with
@@ -369,6 +403,19 @@ def displacement_calc(group):
     xy_disp = xy_disp.dropna()
     disp = np.sqrt(np.sum((xy_disp)**2, axis=1))
     return disp
+
+def displacement_in_theta_calc(group):
+    '''Calculates the displacement of the group with a theta position. Use with
+    pandas groupby and apply.
+
+    :param group: DataFrame with 'theta' column and contains only one 'track id'
+    '''
+    group_non_consec_index = group[group.frame - group.shift(1).frame > 1].index
+    group.loc[group_non_consec_index, ['theta']] = np.nan
+    theta_data = group['theta']
+    theta_disp = theta_data - theta_data.shift(1)
+    theta_disp = theta_disp.dropna()
+    return theta_disp
 
 default_um_conv = 6.5/60.0/1.6/2.00
 default_frame_rate = 90.00
@@ -394,6 +441,34 @@ def calc_velocities_consec_frames(df, frame_rate=default_frame_rate, um_conv=def
     df_temp = df_temp.drop_duplicates(subset=['frame', 'track id'], keep='first')
     displacements = df_temp.groupby('track id', group_keys=False).apply(displacement_calc) 
     velocities = displacements * um_conv * frame_rate
+    return velocities
+
+def calc_velocities_consec_frames_in_theta(df, frame_rate=default_frame_rate, um_conv=default_um_conv, theta_range=[120,240], r_range=[128,140], only_over_plate=True):
+    '''Calculates the velocity of particles in theta from a data frame within a specified part of the ring
+    trap and only counts consecutive frames (where the particle does not disappear). The average radius
+    of the particles within the designated theta region is used to calculate the arc traveled
+    in the ring trap.
+
+    :param df: DataFrame that contains the trajectory information with keys 
+    ['frame','track id', 'theta', 'over_plate']
+    :param frame_rate: The frame rate that the experiment was recorded at
+    :param um_conv: The conversion factor to convert position from pixels to um.
+    :param theta_range: Tuple (2 elements) which describe the lower and upper limits of theta that you want
+    to find the velocity of particles over (e.g. the theta range of particles over the nanoplate)
+    :param r_range: Tuple (2 elements) which describes the upper and lower cutoff in radius for 
+    allowed trajectories. This prevents outliers of particles moving great distances
+    in theta in the center of the ring (not in the ring trap).
+    :param over_plate: If True then only particles over the nanoplate are considered. If False all particles
+    velocities are calculated.
+    '''
+    df_temp = df.query('@theta_range[0] < theta < @theta_range[1]')
+    df_temp = df_temp.query('@r_range[0] < r < @r_range [1]')
+    if only_over_plate == True:
+        df_temp = df_temp[df_temp['over_plate'] == True]
+    df_temp = df_temp.drop_duplicates(subset=['frame', 'track id'], keep='first')
+    r_avg = df_temp.r.mean()
+    displacements_theta = df_temp.groupby('track id', group_keys=False).apply(displacement_in_theta_calc) 
+    velocities = displacements_theta* r_avg * (np.pi/180) * um_conv * frame_rate
     return velocities
 
 def calc_force_stokes_drag(velocities, radius=default_radius, viscosity=default_viscosity):
@@ -494,3 +569,111 @@ def trajectory_dwell_time_to_index(df, index, max_frames_absent=1):
     else:
         first_frame = track_df.ix[valid_diffs.index[-1]]['frame']
     return final_frame-first_frame + 1
+
+def check_exiting_region(group):
+    '''Returns the entries where particles that are in the region will be found
+    outside the region the next time they could be identified. This should be used 
+    with a groupby on a data frame grouped by 'track id'. 
+    
+    :pram group: The group from the groupby operation, should be no duplicate
+    entries w.r.t. frame and track id. Must have a boolean column 'in_region'.
+    '''
+    new_group = group.iloc[:-1]
+    cur_bool = group.in_region.iloc[:-1]
+    fut_bool = group.in_region.shift(-1).iloc[:-1].astype(np.bool)
+    return new_group[(cur_bool & ~fut_bool)]
+
+def check_entering_region(group):
+    '''Returns the entries where particles that are in the region that were just 
+    outside the region last time they could be identified. This should be used 
+    with a groupby on a data frame grouped by 'track id'. 
+    
+    :pram group: The group from the groupby operation, should be no duplicate
+    entries w.r.t. frame and track id. Must have a boolean column 'in_region'
+    '''
+    new_group = group.iloc[1:]
+    cur_bool = group.in_region.iloc[1:]
+    past_bool = group.in_region.shift(1).iloc[1:].astype(np.bool)
+    return new_group[(cur_bool & ~past_bool)]
+
+def find_longest_trajs_in_group_in_region(group):
+    '''Returns only the entries in the data frame that represent the longest
+    trajectory in a region for each 'track id'. This should be used with 
+    groupby on a DataFrame grouped by 'track id' with boolean values for
+    particles entering and leaving the region.
+    
+    :param group: A 'track id' group from the groupby operation. Should have
+    no duplicate entries w.r.t. frame and 'track id'. Must have boolean 
+    columns 'first_frame_region' and 'last_frame_region'
+    '''
+    # Find trajectories that enter and exit region
+    ent_group = group.first_frame_region == True
+    exit_group = group.last_frame_region == True
+    ent_exit_group = group[ent_group | exit_group]
+    
+    # Return if particle doesn't have both and entrance and exit
+    if len(ent_exit_group) == 1:
+        return pd.DataFrame(columns=group.columns)
+    
+    # Find start index of longest traj
+    frames = ent_exit_group.shift(-1).frame - ent_exit_group.frame
+    if len(frames) == 0:
+        return pd.DataFrame(columns=group.columns)
+    start = frames.idxmax()
+    if group.loc[start, 'last_frame_region'] == True:
+        return pd.DataFrame(columns=group.columns)
+    
+    # Find end index of longest traj
+    frames = ent_exit_group.frame - ent_exit_group.shift(1).frame
+    if len(frames) == 0:
+        return pd.DataFrame(columns=group.columns)
+    end = frames.idxmax()
+    if group.loc[end, 'first_frame_region'] == True:
+        return pd.DataFrame(columns=group.columns)
+    
+    return group.ix[start:end]
+
+
+def find_longest_trajs_in_region(df, theta_range=(120,240)):
+    '''Returns a data frame of trajectories of only the longest consecutive 
+    trajectories in a defined region.
+    
+    This function accepts a DataFrame of rotational trajectories and allows you
+    to find the longest consecutive trajectories in a selected region. First 
+    particle trajectories are cut to just the ones that are in the region. Next,
+    for each trajectory (track id) that passes through the region only the longest
+    one is kept. The trajectories that are returned must move from outside the
+    region into it and also must move from inside the region to outside of it in
+    order for the trajectory to be considered. Having these critera prevents 
+    counting trajectories of particles that 'appear' in the region (and not seen
+    outside first) or particles that 'disappear' out fo the region (and not seen
+    again). This should give trajectories that are continuous and move all the 
+    way through the region.
+    
+    Note: This function does not respect periodic boundary conditions. You 
+    cannot use a theta range that spans across 0 degrees.
+    
+    :param df: DataFrame of trajectories to be analyzed. Does not need to have
+    unique values w.r.t. 'frame' and 'track id'.
+    :param (tuple) theta_range: Tuple (2 elements) wich describes the region you
+    will be selecting the longest trajectories from.
+    '''
+    # Designate if particle positions are in the region with 'in_region" column
+    df_unique = df.copy().drop_duplicates(subset=['frame', 'track id'], keep='first')
+    df_in_region = (theta_range[0] < df_unique.theta) & (df_unique.theta < theta_range[1])
+    df_unique.loc[df_in_region, 'in_region'] = True
+    df_unique.loc[~df_in_region, 'in_region'] = False
+    
+    # Find positions where particles just enter or exit the region
+    entering_region = df_unique.groupby('track id', group_keys=False).apply(check_entering_region)
+    exiting_region = df_unique.groupby('track id', group_keys=False).apply(check_exiting_region)
+    
+    # Designate which positions are the first/last frame in the region
+    df_unique['first_frame_region'] = False
+    df_unique['last_frame_region'] = False
+    df_unique.loc[entering_region.index, 'first_frame_region'] = True
+    df_unique.loc[exiting_region.index, 'last_frame_region'] = True
+    
+    # Determine the longest consecutive trajectory in the region
+    df_long_traj_in_region = df_unique.groupby('track id', group_keys=False).apply(find_longest_trajs_in_group_in_region)
+    return df_long_traj_in_region
