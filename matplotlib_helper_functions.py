@@ -68,3 +68,23 @@ def make_cbar_match_polar_axis_height(polar_ax, cbar_ax):
     cbar_pos = cbar_ax.ax.get_position()
     cbar_ax.ax.set_position([cbar_pos.x0, bot_point_fig[1],
                           cbar_pos.x1 - cbar_pos.x0,
+                         top_point_fig[1] - bot_point_fig[1]])
+
+def load_matlab_to_dict(filename):
+    mat = sio.loadmat(filename)
+    
+    # A list of useless keys to skip in each .mat file
+    skip_keys = ['__version__', '__header__', '__globals__']
+    
+    # Make sure all 1xN and Nx1 arrays are flattened
+    new_dict = {}
+    for key, val in mat.iteritems():
+        if key in skip_keys:
+            continue
+        if val.shape[0] == 1:
+            new_dict[key] = val[0,:]
+        elif val.shape[1] == 1:
+            new_dict[key] = val[:,0]
+        else:
+            new_dict[key] = val
+    return new_dict
