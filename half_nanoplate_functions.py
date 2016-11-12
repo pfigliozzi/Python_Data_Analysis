@@ -414,6 +414,7 @@ def displacement_in_theta_calc(group):
     group.loc[group_non_consec_index, ['theta']] = np.nan
     theta_data = group['theta']
     theta_disp = theta_data - theta_data.shift(1)
+    theta_disp = theta_disp - 360.0 * np.round(theta_disp/360.0)
     theta_disp = theta_disp.dropna()
     return theta_disp
 
