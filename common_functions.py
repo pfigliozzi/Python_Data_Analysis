@@ -901,3 +901,79 @@ def plot_positions_on_image(image_path, dfs_positions, save_path=None, particle_
                               tuple(particle['x pos':'y pos'].values+particle_size)]
                 img_draw.ellipse(ellipse_bb, outline=trajectory_palette[num2])
         rgb_image.save(file_name+'.png')
+
+def plot_trajectories_on_image(image_path, df, save_path=None, particle_size=6.0, tail_length=4.0, particle_outline='red'):
+    """Draws particle positions from one or more DataFrames onto raw data
+    
+    :param image_path: The path where the raw data is. Expect an image sequence of tifs that is ordered when glob
+    is called.
+    :param df: A DataFrame object that have particle positions in "frame", "x pos" and "y pos"
+    that will be drawn on the raw data
+    :param save_path: The path where the new images will be saved. If the directory does not exist it will be created
+    :param particle_size: The size to draw each particle (in pixels) around each position.
+    :param tail_length: the number of previous points to draw the trajectory tail to
+    :param particle_outline: A color name (used in PIL) to draw the outline of the particles. If set to
+    "matchtail" then the outline will be the same color as the tail of the trajectory.
+    """
+    
+    try:
+        os.chdir(save_path)
+    except WindowsError:
+        os.mkdir(save_path)
+        os.chdir(save_path)
+    image_list = glob.glob(image_path+"*.tif")
+    traj_palette_count = 0
+
+    trajectory_palette = ['yellow', 'firebrick', 'lime', 'cyan', 'peachpuff', 'mediumaquamarine', 'lavenderblush', 'plum', 'turquoise', 'wheat', 'palevioletred']
+    track_color = {}
+    for num, img_name in enumerate(image_list):
+        # Load the image
+        file_name = os.path.split(img_name)[-1]
+        file_name = os.path.splitext(file_name)[0]
+        curr_image = Image.open(img_name)
+        
+        # Rescale image so it shows up in a png
+        img_arr = np.array(curr_image.getdata()).reshape(curr_image.size)
+        min_pixel = np.min(img_arr)
+        img_arr = img_arr - min_pixel
+        max_pixel = np.max(img_arr)
+        scale = 255/float(max_pixel)
+        img_arr = np.round(img_arr * scale)
+        curr_image = Image.fromarray(img_arr)
+        rgb_image = curr_image.convert(mode='RGB')
+        img_draw = ImageDraw.Draw(rgb_image)
+        
+        frame = df[df.frame == num+1]
+        points = list(frame.loc[:,'x pos':'y pos'].values.flatten())
+        
+        for idx, particle in frame.iterrows():
+            track_num = particle['track id']
+
+            # Determine to color to use for the trajectory
+            try:
+                track_color[str(track_num)]
+            except KeyError:
+                track_color[str(track_num)] = trajectory_palette[traj_palette_count % len(trajectory_palette)]
+                traj_palette_count += 1
+
+            if particle_outline == 'matchtail':
+                outline_color = track_color[str(track_num)]
+            else:
+                outline_color = particle_outline
+
+            ellipse_bb = [tuple(particle['x pos':'y pos'].values-particle_size),
+                          tuple(particle['x pos':'y pos'].values+particle_size)]
+            img_draw.ellipse(ellipse_bb, outline=outline_color)
+            
+            # Determine the line segments to draw based on tail length
+            line_segments = df[(df['track id']==track_num) & 
+                                       ((int(frame.frame.iloc[0])-tail_length <= df['frame']) &
+                                        (df['frame'] <= frame.frame.iloc[0]))]
+            line_segments = line_segments[['x pos','y pos']].values/1 
+            line_segments = line_segments.flatten()
+            if len(line_segments)/2 == 1:
+                img_draw.point(list(line_segments), fill=track_color[str(track_num)])
+            elif len(line_segments)/2 > 1:
+                img_draw.line(list(line_segments), fill=track_color[str(track_num)])
+
+        rgb_image.save(file_name+'.png')
