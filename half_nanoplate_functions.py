@@ -397,9 +397,9 @@ def displacement_calc(group):
     :param group: DataFrame with 'x pos' and 'y pos' columns and contains only one 'track id'
     '''
     group_non_consec_index = group[group.frame - group.shift(1).frame > 1].index
-    group.loc[group_non_consec_index, ['x pos', 'y pos']] = np.nan
     xy_data = group[['x pos', 'y pos']]
     xy_disp = xy_data - xy_data.shift(1)
+    xy_disp.loc[group_non_consec_index] = np.nan
     xy_disp = xy_disp.dropna()
     disp = np.sqrt(np.sum((xy_disp)**2, axis=1))
     return disp
@@ -411,10 +411,10 @@ def displacement_in_theta_calc(group):
     :param group: DataFrame with 'theta' column and contains only one 'track id'
     '''
     group_non_consec_index = group[group.frame - group.shift(1).frame > 1].index
-    group.loc[group_non_consec_index, ['theta']] = np.nan
     theta_data = group['theta']
     theta_disp = theta_data - theta_data.shift(1)
     theta_disp = theta_disp - 360.0 * np.round(theta_disp/360.0)
+    theta_disp.loc[group_non_consec_index] = np.nan
     theta_disp = theta_disp.dropna()
     return theta_disp
 
