@@ -977,3 +977,29 @@ def plot_trajectories_on_image(image_path, df, save_path=None, particle_size=6.0
                 img_draw.line(list(line_segments), fill=track_color[str(track_num)])
 
         rgb_image.save(file_name+'.png')
+
+def periodic_1D_guassian_kde(data, bandwidth=0.3, periodic_limit=2*np.pi, resolution=400):
+    '''Calculates the kernel density estimator for a data set in 1D with
+    periodic boundary conditions.
+    
+    :param data: The 1D vector you want to find the KDE of
+    :param bandwidth: The bandwidth of the gaussian used for the KDE
+    :param periodic_limit: The upper limit on the periodic boundary condition. 
+    The lower bound is assumed to be 0.
+    :param resolution: The number of points you want to cacluate the KDE for
+    within between 0 and the periodic_limit'''
+    
+    kernel = scipy.stats.gaussian_kde(data, bw_method=bandwidth)
+    
+    x_values = np.linspace(0, periodic_limit, num=resolution)
+    x_values_upper = np.linspace(periodic_limit, 2*periodic_limit, num=resolution)
+    x_values_lower = np.linspace(-periodic_limit, 0, num=resolution)
+    
+    
+    estimate = kernel.evaluate(x_values)
+    estimate_upper = kernel.evaluate(x_values_upper)
+    estimate_lower = kernel.evaluate(x_values_lower)
+        
+    new_estimate = estimate + estimate_upper + estimate_lower
+    
+    return x_values, new_estimate
