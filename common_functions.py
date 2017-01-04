@@ -1003,3 +1003,16 @@ def periodic_1D_guassian_kde(data, bandwidth=0.3, periodic_limit=2*np.pi, resolu
     new_estimate = estimate + estimate_upper + estimate_lower
     
     return x_values, new_estimate
+
+def calc_displacements_periodic(array, periodic_bound):
+    '''Calculates the displacement of the elements in the array if the 
+    variable has a periodic bound
+
+    :param array: Numpy time series of some variable with periodic 
+    boundaries
+    :param periodic_bound: The upper bound of the periodic boundary 
+    for the variable. The lower bound is assumed to be 0.
+    '''
+    disp = array[1:] - array[:-1]
+    disp = disp - periodic_bound * np.round(disp/periodic_bound)
+    return disp
