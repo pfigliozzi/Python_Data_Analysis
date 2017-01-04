@@ -11,6 +11,7 @@ import skimage.viewer
 from PIL import Image, ImageDraw, ImageColor
 import trackpy
 import trackpy.predict
+import glob
 
 def matlab_gui_to_data_frame_with_intesity(m):
     return pd.DataFrame(
