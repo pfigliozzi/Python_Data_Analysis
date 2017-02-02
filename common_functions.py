@@ -1016,3 +1016,16 @@ def calc_displacements_periodic(array, periodic_bound):
     disp = array[1:] - array[:-1]
     disp = disp - periodic_bound * np.round(disp/periodic_bound)
     return disp
+
+def calc_displacements_periodic_series(series, periodic_bound):
+    '''Calculates the displacement of the elements in a series if the 
+    variable has a periodic bound
+
+    :param series: Pandas time series of some variable with periodic 
+    boundaries
+    :param periodic_bound: The upper bound of the periodic boundary 
+    for the variable. The lower bound is assumed to be 0.
+    '''
+    disp = series.shift(-1) - series
+    disp = disp - periodic_bound * np.round(disp/periodic_bound)
+    return disp
