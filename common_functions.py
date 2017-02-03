@@ -854,8 +854,10 @@ def find_k_nn_xy_and_theta(grp, num_nn_k=None):
     grp_copy = grp.copy()
     xy_grp = find_k_nn(grp_copy, num_nn_k)
     theta_grp = find_k_nn_theta(grp_copy, num_nn_k)
-    new_df = pd.concat([xy_grp, theta_grp.loc[:,['theta_nn_num', 'theta_nn_id', 'theta_nn_dist']]], axis=1)
-    return new_df
+    xy_grp['theta_nn_num'] = theta_grp['theta_nn_num']
+    xy_grp['theta_nn_id'] = theta_grp['theta_nn_id']
+    xy_grp['theta_nn_dist'] = theta_grp['theta_nn_dist']
+    return xy_grp
 
 def plot_positions_on_image(image_path, dfs_positions, save_path=None, particle_size=6.0):
     """Draws particle positions from one or more DataFrames onto raw data
