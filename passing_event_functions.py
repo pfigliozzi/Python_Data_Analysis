@@ -93,3 +93,33 @@ def trackpy_gaussian_rot_motion_linker(data_frame, search_range, rot_velocity=0.
                     retain_index=True, link_strategy='numba', predictor=predict, **kwargs)
     data_frame['track id'] = data_frame['particle']
     del data_frame['particle']
+
+def add_del_r_del_theta(dataframe):
+    """A function that adds delta theta and delta r columns to a data 
+    frame for a particles nearest neighbors in theta.
+
+    Using the nearest neighbors in theta it will calculate the delta r 
+    and delta theta for each of those nearest neighbors in theta. The theta
+    nearest neighbor is not always the same as the cartesian nearest 
+    neighbor. The delta r and delta theta will be aligned with the 
+    theta nearest neighbor id.
+
+    :params dataframe: DataFrame that contains columns for ['frame', 'track id',
+    'x pos', 'y pos', 'r', 'theta', 'theta_nn_id'] that you want to add the 
+    'del_r' and 'del_theta' columns to.
+    """
+    df_copy = dataframe.copy()
+    # Align nearest neighbors with the theta_nn_id col.
+    frame_track_indexed = df_copy.set_index(['frame', 'track id'])
+    frame_track_indexed = frame_track_indexed.drop_duplicates(['x pos', 'y pos'])
+
+    frame_track_keys = df_copy[['frame', 'theta_nn_id']].values
+    zipped_keys = zip(frame_track_keys[:,0], frame_track_keys[:,1])
+    frame_track_aligned = frame_track_indexed.ix[zipped_keys].reset_index()
+    
+    del_theta = frame_track_aligned['theta'] - df_copy['theta'] 
+    del_theta = del_theta - 360 * np.round(del_theta/360)
+    df_copy['del_theta'] = del_theta
+    
+    df_copy['del_r'] = frame_track_aligned['r'] - df_copy['r']
+    return df_copy
