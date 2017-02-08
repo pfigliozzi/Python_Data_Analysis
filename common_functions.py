@@ -825,7 +825,7 @@ def find_k_nn_theta(grp, num_nn_k=None):
     if len(d) == 1:  # If only one particle return the group
         grp['theta_nn_num'] = np.nan
         grp['theta_nn_id'] = np.nan
-        grp['theta_nn_dist'] = np.nan        
+        grp['theta_nn_dist'] = np.nan
         return grp
     # Create particle id column
     particle_ids = grp['track id'].values
