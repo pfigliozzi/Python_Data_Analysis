@@ -48,3 +48,48 @@ def find_frames_particle_number_diff_rolling_mode(df, window=5):
     frames = different_num_particles[different_num_particles==True].index
 
     return frames
+
+def trackpy_gaussian_rot_motion_linker(data_frame, search_range, rot_velocity=0.0, fwhm=6, memory=0, **kwargs):
+    '''A wrapper for trackpy linking that includes a predictor for rotating particles
+
+    :params data_frame: DataFrame containing all the particle position information
+    :params search_range: Max distance a particle can move between frames
+    :params rot_velocity: The bias (in degrees) that a candidate particle should be
+    found at for each frame. This value reflects the maximum bias applied to the 
+    particle based on its position.
+    :param fwhm: The full-width-half-maximum of the guassian function which applies
+    the rotational bias. Should be set to the full-width-half-maximum of the ring 
+    trap in r.
+    :params memory: The number of frames a particle can disappear for and still be 
+    considered the same particle.
+    :params kwrgs: Additional keyword arguments passed to trackpy.link_df
+    '''
+
+    # Find the particle locations in polar coords
+    xf, yf, rf = cf.least_sq_fit_circle(data_frame)
+    cf.polar_coor_data_frame(data_frame, xf, yf)
+    
+    # Setup the gaussian profile of the bias using the full width half
+    # max and the radius for the circle fit.
+    std = fwhm/2.3548
+    mean = rf
+    guass = lambda x: np.exp(-(x - mean)**2/(2 * std**2)) 
+    
+    # Generate the predictor function
+    @trackpy.predict.predictor
+    def predict(t1, particle):
+        theta = cf.calc_angle(particle.pos[0], particle.pos[1], xf, yf)
+        r = cf.calc_radius(particle.pos[0], particle.pos[1], xf, yf)
+        
+        new_theta = theta + rot_velocity * guass(r) * (t1 - particle.t)
+        new_theta %= 360.0
+        new_x = cf.calc_x_from_polar(r, new_theta, xf)
+        new_y = cf.calc_y_from_polar(r, new_theta, yf)
+        return np.array((new_x,new_y))
+        
+    
+    # Track the data and restructure the resulting DataFrame
+    trackpy.link_df(data_frame, search_range, memory=memory, pos_columns=['x pos', 'y pos'],
+                    retain_index=True, link_strategy='numba', predictor=predict, **kwargs)
+    data_frame['track id'] = data_frame['particle']
+    del data_frame['particle']
