@@ -12,6 +12,9 @@ from PIL import Image, ImageDraw, ImageColor
 import trackpy
 import trackpy.predict
 import glob
+sys.path.append(os.path.abspath("C:\Users\Scherer Lab E\Documents\GitHub\Python_Data_Analysis"))
+import common_functions as cf
+
 
 def mode_for_rolling(df):
     '''Pandas does not support calculating the mode for a rolling object. This
