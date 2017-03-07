@@ -1,4 +1,5 @@
 import scipy.io as sio
+import numpy as np
 
 def add_axes_label_inches(ax, (right_left, down_up), string, corner='upper left', **kwargs):
     """A helper function to add a text label a specific distance from an axes corner in inches.
