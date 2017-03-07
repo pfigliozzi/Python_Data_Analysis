@@ -88,3 +88,26 @@ def load_matlab_to_dict(filename):
         else:
             new_dict[key] = val
     return new_dict
+
+def add_inset_axes_coors(fig, axis, rect):
+    '''Returns a matplotlib axis object with the location set relative to an
+    input axis as a rectangle [left, up, width, height] in axis fraction 
+    coordinates.
+    
+    :params fig: The figure object you want to add the axis to
+    :params axis: The axis object (within fig) you want your new axis 
+    coordinates relative to
+    :params rect: A rectangle defining your new axis in units of fraction of 
+    input axis object of length 4. The parameters are [left, up, width, height].
+    '''
+    ax_x_start = rect[0]
+    ax_y_start = rect[1]
+    ax_x_end = rect[2] + ax_x_start
+    ax_y_end = rect[3] + ax_y_start
+    pix_xy_start = axis.transAxes.transform([ax_x_start, ax_y_start])
+    pix_xy_end = axis.transAxes.transform([ax_x_end, ax_y_end])
+    fig_width_height = fig.canvas.get_width_height()
+    rel_fig_start = pix_xy_start/fig_width_height
+    rel_fig_width_height = (pix_xy_end/fig_width_height) - rel_fig_start
+    inset_axis = fig.add_axes(np.concatenate((rel_fig_start,rel_fig_width_height)))
+    return inset_axis
