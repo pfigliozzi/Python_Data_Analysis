@@ -123,3 +123,39 @@ def add_del_r_del_theta(dataframe):
     
     df_copy['del_r'] = frame_track_aligned['r'] - df_copy['r']
     return df_copy
+
+def find_passing_events(df):
+    """A function that finds when a passing event occurs by looking
+    at when the relative theta coordinate changes between a pair of particles
+    
+    This function will call 'add_del_r_del_theta' to calculate the relative
+    coordinates in 'r' and 'theta' for all particle pairs in the DataFrame.
+    This function will look at the sign of 'del_theta' for a given pair and
+    determine when 'del_theta' goes from negative to positive (or vice versa)
+    to declare it as a passing event. The passing events will be denoted with
+    booling column, 'passing_event', appended on the returned DataFrame. Note:
+    the relative coordinates 'del_r' and 'del_theta' are also appended to the 
+    DataFrame returned from this function.
+    
+    :param df: DataFrame that contains columns for ['frame', 'track id', 
+    'theta', 'r', 'x pos', 'y pos'].
+    """
+    
+    # Add relative coordinates
+    df_rel = add_del_r_del_theta(df)
+    
+    # Create a DataFrame with a 1 frame shift
+    df_new_index = df_rel.set_index(['frame', 'track id', 'theta_nn_id'])
+    new_index = df_new_index.index
+    new_index_array = np.asarray(list(new_index.values))
+    new_index_array[:, 0] += 1 # Shift the 'frame' index by 1
+    selector = list(map(tuple, new_index_array))
+    df_frame_shift = df_new_index.loc[selector]
+    
+    # Find where 'del_theta' changes sign
+    del_theta_change = df_new_index['del_theta'].values * df_frame_shift['del_theta'].values
+    pass_transition_state = (del_theta_change < 0)
+    within_90_deg = (abs(del_theta_change) < 90**2) # Don't count >180 passing events
+    df_rel['passing_event'] = pass_transition_state & within_90_deg
+    
+    return df_rel
