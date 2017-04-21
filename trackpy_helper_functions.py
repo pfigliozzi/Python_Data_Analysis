@@ -64,7 +64,7 @@ def annotate(df_positions, pims_obj):
 
 def annotate_from_path(df_positions, image_path, **kwargs):
     """Function to display the localized positon of particles in
-    an image viewer.
+    an image viewer by loading images from a specific path.
     """
     image_filenames = glob.glob(image_path+"\*.tif")
     pims_seq = pims.ImageSequence(image_filenames)
@@ -154,11 +154,11 @@ class TrajectoryViewer(CollectionViewer):
         # collection = PatchCollection(patches, color='r', facecolor='none')
         # self.artists = self.ax.add_collection(collection)
 
-def traj_view(df_positions, pims_obj):
+def traj_view(df_positions, pims_obj, **kwargs):
     """Function to display the localized positon of particles in
     an image viewer.
     """
-    viewer = TrajectoryViewer(pims_obj, df_positions)
+    viewer = TrajectoryViewer(pims_obj, df_positions, **kwargs)
     viewer.show()
 
 def traj_view_from_path(df_positions, image_path, **kwargs):
@@ -168,4 +168,3 @@ def traj_view_from_path(df_positions, image_path, **kwargs):
     image_filenames = glob.glob(image_path+"\*.tif")
     pims_seq = pims.ImageSequence(image_filenames)
     viewer = TrajectoryViewer(pims_seq, df_positions, **kwargs)
-    viewer.show()
