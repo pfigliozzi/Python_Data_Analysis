@@ -23,7 +23,7 @@ class ParticlePositionViewer(CollectionViewer):
         CollectionViewer.__init__(self, image_collection)
         self.df_positions = df_positions
         self.artists = None
-        self.circle_kwargs = dict(edgecolor='r', radius=6, facecolor=None, fill=False, lw=1)
+        self.circle_kwargs = dict(edgecolor='r', radius=6, facecolor='red', fill=False, lw=1)
         
         self.pos_columns = pos_columns
 
@@ -55,11 +55,11 @@ class ParticlePositionViewer(CollectionViewer):
         self._image_plot.set_clim(self.vmin_vmax)
 
 
-def annotate(df_positions, pims_obj):
+def annotate(df_positions, pims_obj, **kwargs):
     """Function to display the localized positon of particles in
     an image viewer.
     """
-    viewer = ParticlePositionViewer(pims_obj, df_positions)
+    viewer = ParticlePositionViewer(pims_obj, df_positions, **kwargs)
     viewer.show()
 
 def annotate_from_path(df_positions, image_path, **kwargs):

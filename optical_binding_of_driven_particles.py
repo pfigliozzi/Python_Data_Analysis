@@ -79,7 +79,7 @@ def filter_by_n_nn_with_more_d_distance_away(data_frame, nn_num_allowed=1, dist_
     um_data_frame = data_frame.copy()
     # Convert the NN Dist to um
     um_data_frame['nn_dist'] *= um_conv
-    # Pivot the data to look down the nn_num and view the nn_dis
+    # Pivot the data to look down the nn_num and view the nn_dist
     frm_trkid_by_nnnum = um_data_frame.pivot_table(index=['frame','track id'], columns='nn_num', values='nn_dist')
     # Find valid nn less than the min_nn_distance_allowed
     valid_nn = frm_trkid_by_nnnum.loc[:,:nn_num_allowed] < min_nn_dist_allowed
