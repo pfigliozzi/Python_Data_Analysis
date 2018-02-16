@@ -226,12 +226,15 @@ def add_dwell_time_and_travel_distance_passing_events(df, del_theta_separation, 
     
     return df_copy
 
-def select_frame_from_experiment(frame, key, store):
+def select_frame_from_experiment(frame, key, store, new_base_dir=None):
     '''Selects a particlular image frame from an experiment when you give
     the data base, the key, and the frame from an HDF store that has appended
     paths of image data.
     '''
     image_path = store.index.image_path[store.index['key'] == key].values[0]
+    if not new_base_dir == None:
+        image_path_components = image_path.split(os.sep)[-2:]
+        image_path = os.path.join(new_base_dir, *image_path_components)
     image = plt.imread(image_path + '\\' + str(10000+frame) + '.tif')
     return image
 
